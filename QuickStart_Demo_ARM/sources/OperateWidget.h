@@ -15,10 +15,6 @@ public:
     OperateWidget(QWidget *parent = Q_NULLPTR);
     void reset();
     
-    // AIGC 相关
-    void setAIStarted(bool started);
-    void setAILoading(bool loading);
-    void setAIEnabled(bool enabled);
     
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -40,9 +36,6 @@ signals:
     void sigMicVolumeChanged(int volume);
     void sigSpeakerVolumeChanged(int volume);
     
-    // AIGC 信号
-    void sigStartAI();
-    void sigStopAI();
     
     // 摄像头切换信号
     void sigCameraChanged(const CameraInfo& camera);
@@ -54,21 +47,15 @@ public:
     
 private:
     void setupVolumeControls();
-    void setupAIButton();
     void setupCameraSelector();
-    void onAIButtonClicked();
     void onCameraChanged(int index);
+    void updateCameraTooltip();
     
     Ui::OperateForm ui;
     QSlider* m_micVolumeSlider = nullptr;
     QSlider* m_speakerVolumeSlider = nullptr;
     QLabel* m_micLabel = nullptr;
     QLabel* m_speakerLabel = nullptr;
-    
-    // AIGC 控制按钮
-    QPushButton* m_aiButton = nullptr;
-    bool m_aiStarted = false;
-    bool m_aiLoading = false;
     
     // 摄像头选择
     QComboBox* m_cameraCombo = nullptr;

@@ -21,7 +21,6 @@ OperateWidget::OperateWidget(QWidget *parent)
     connect(ui.hangupBtn, &QPushButton::clicked, this, &OperateWidget::on_hangupBtn_clicked);
     
     setupVolumeControls();
-    setupAIButton();
     setupCameraSelector();
 }
 
@@ -139,174 +138,49 @@ void OperateWidget::reset()
 	ui.muteVideoBtn->setChecked(false);
 	ui.muteVideoBtn->blockSignals(false);
 	
-	// 重置 AI 按钮状态
-	setAIStarted(false);
-	setAILoading(false);
-}
-
-void OperateWidget::setupAIButton()
-{
-    // 创建 AI 控制按钮
-    m_aiButton = new QPushButton(this);
-    m_aiButton->setText("🤖 启动AI");
-    m_aiButton->setFixedSize(80, 40);
-    m_aiButton->setStyleSheet(
-        "QPushButton {"
-        "  background: #52c41a;"
-        "  color: white;"
-        "  border: none;"
-        "  border-radius: 8px;"
-        "  font-size: 12px;"
-        "  font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "  background: #73d13d;"
-        "}"
-        "QPushButton:pressed {"
-        "  background: #389e0d;"
-        "}"
-        "QPushButton:disabled {"
-        "  background: #666;"
-        "  color: #999;"
-        "}"
-    );
-    
-    // 将按钮插入到布局的最前面
-    QHBoxLayout* mainLayout = qobject_cast<QHBoxLayout*>(ui.muteAudioBtn->parentWidget()->layout());
-    if (mainLayout) {
-        mainLayout->insertWidget(0, m_aiButton);
-    }
-    
-    // 连接点击信号
-    connect(m_aiButton, &QPushButton::clicked, this, &OperateWidget::onAIButtonClicked);
-    
-    // 默认禁用，等待配置加载完成
-    m_aiButton->setEnabled(false);
-}
-
-void OperateWidget::onAIButtonClicked()
-{
-    if (m_aiLoading) {
-        return;  // 正在加载中，忽略点击
-    }
-    
-    if (m_aiStarted) {
-        emit sigStopAI();
-    } else {
-        emit sigStartAI();
-    }
-}
-
-void OperateWidget::setAIStarted(bool started)
-{
-    m_aiStarted = started;
-    if (m_aiButton) {
-        if (started) {
-            m_aiButton->setText("⏹ 停止AI");
-            m_aiButton->setStyleSheet(
-                "QPushButton {"
-                "  background: #ff4d4f;"
-                "  color: white;"
-                "  border: none;"
-                "  border-radius: 8px;"
-                "  font-size: 12px;"
-                "  font-weight: bold;"
-                "}"
-                "QPushButton:hover {"
-                "  background: #ff7875;"
-                "}"
-                "QPushButton:pressed {"
-                "  background: #d9363e;"
-                "}"
-                "QPushButton:disabled {"
-                "  background: #666;"
-                "  color: #999;"
-                "}"
-            );
-        } else {
-            m_aiButton->setText("🤖 启动AI");
-            m_aiButton->setStyleSheet(
-                "QPushButton {"
-                "  background: #52c41a;"
-                "  color: white;"
-                "  border: none;"
-                "  border-radius: 8px;"
-                "  font-size: 12px;"
-                "  font-weight: bold;"
-                "}"
-                "QPushButton:hover {"
-                "  background: #73d13d;"
-                "}"
-                "QPushButton:pressed {"
-                "  background: #389e0d;"
-                "}"
-                "QPushButton:disabled {"
-                "  background: #666;"
-                "  color: #999;"
-                "}"
-            );
-        }
-    }
-}
-
-void OperateWidget::setAILoading(bool loading)
-{
-    m_aiLoading = loading;
-    if (m_aiButton) {
-        m_aiButton->setEnabled(!loading);
-        if (loading) {
-            m_aiButton->setText("加载中...");
-        } else {
-            // 恢复正常文本
-            setAIStarted(m_aiStarted);
-        }
-    }
-}
-
-void OperateWidget::setAIEnabled(bool enabled)
-{
-    if (m_aiButton) {
-        m_aiButton->setEnabled(enabled && !m_aiLoading);
-    }
 }
 
 void OperateWidget::setupCameraSelector()
 {
-    // 创建摄像头选择下拉框
+    // 创建摄像头选择下拉框 - 紧凑圆形按钮样式
     m_cameraCombo = new QComboBox(this);
-    m_cameraCombo->setFixedSize(120, 28);
+    m_cameraCombo->setFixedSize(50, 50);
     m_cameraCombo->setToolTip("选择摄像头");
     m_cameraCombo->setStyleSheet(
         "QComboBox {"
         "  background: #3d3d3d;"
         "  color: white;"
-        "  border: 1px solid #555;"
-        "  border-radius: 4px;"
-        "  padding: 2px 5px;"
-        "  font-size: 11px;"
+        "  border: none;"
+        "  border-radius: 25px;"
+        "  font-size: 16px;"
+        "  padding-left: 15px;"
+        "}"
+        "QComboBox:hover {"
+        "  background: #4d4d4d;"
         "}"
         "QComboBox::drop-down {"
         "  border: none;"
-        "  width: 20px;"
+        "  width: 0px;"
         "}"
         "QComboBox::down-arrow {"
         "  image: none;"
-        "  border-left: 4px solid transparent;"
-        "  border-right: 4px solid transparent;"
-        "  border-top: 6px solid white;"
-        "  margin-right: 5px;"
         "}"
         "QComboBox QAbstractItemView {"
         "  background: #3d3d3d;"
         "  color: white;"
         "  selection-background-color: #0078d4;"
+        "  min-width: 150px;"
         "}"
     );
     
-    // 将摄像头选择器插入到布局中 (在AI按钮后面)
-    if (ui.horizontalLayout_2) {
-        // 在 AI 按钮后插入摄像头选择器 (索引1是AI按钮后面)
-        ui.horizontalLayout_2->insertWidget(2, m_cameraCombo);
+    // 将摄像头选择器插入到布局最左边 (在摄像头开关按钮后面)
+    QHBoxLayout* mainLayout = qobject_cast<QHBoxLayout*>(ui.muteAudioBtn->parentWidget()->layout());
+    if (mainLayout) {
+        // 找到 muteVideoBtn 的位置，在其后面插入摄像头选择器
+        int videoIndex = mainLayout->indexOf(ui.muteVideoBtn);
+        if (videoIndex >= 0) {
+            mainLayout->insertWidget(videoIndex + 1, m_cameraCombo);
+        }
     }
     
     // 连接信号
@@ -326,18 +200,35 @@ void OperateWidget::refreshCameras()
     
     m_cameras = ExternalVideoSource::detectCameras();
     
-    for (const CameraInfo& cam : m_cameras) {
-        m_cameraCombo->addItem(cam.name, cam.id);
+    // 下拉框显示简短序号，完整名称在下拉列表中显示
+    for (int i = 0; i < m_cameras.size(); i++) {
+        const CameraInfo& cam = m_cameras[i];
+        // 显示文本用序号，但下拉列表显示完整名称
+        QString displayText = QString("%1").arg(i + 1);
+        m_cameraCombo->addItem(displayText, cam.id);
+        // 设置下拉列表中的完整名称
+        m_cameraCombo->setItemData(i, cam.name, Qt::ToolTipRole);
     }
     
     if (m_cameras.isEmpty()) {
-        m_cameraCombo->addItem("无摄像头", "");
+        m_cameraCombo->addItem("×", "");
         m_cameraCombo->setEnabled(false);
+        m_cameraCombo->setToolTip("无摄像头");
     } else {
         m_cameraCombo->setEnabled(true);
+        updateCameraTooltip();
     }
     
     m_cameraCombo->blockSignals(false);
+}
+
+void OperateWidget::updateCameraTooltip()
+{
+    if (!m_cameraCombo || m_cameras.isEmpty()) return;
+    int idx = m_cameraCombo->currentIndex();
+    if (idx >= 0 && idx < m_cameras.size()) {
+        m_cameraCombo->setToolTip(m_cameras[idx].name);
+    }
 }
 
 void OperateWidget::setCurrentCamera(const CameraInfo& camera)
@@ -360,5 +251,6 @@ void OperateWidget::onCameraChanged(int index)
     
     const CameraInfo& camera = m_cameras[index];
     qDebug() << "OperateWidget: camera changed to" << camera.name;
+    updateCameraTooltip();
     emit sigCameraChanged(camera);
 }

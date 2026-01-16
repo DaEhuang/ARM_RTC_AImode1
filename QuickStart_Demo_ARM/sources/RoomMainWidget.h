@@ -8,9 +8,11 @@
 #include "bytertc_room_event_handler.h"
 #include "AIGCApi.h"
 #include "ExternalVideoSource.h"
+#include "ModeWidget.h"
 
 class LoginWidget;
 class OperateWidget;
+class ModeWidget;
 class CustomVideoSink;
 class ExternalVideoSource;
 class ExternalAudioSource;
@@ -72,6 +74,9 @@ public
     
     // 摄像头切换槽
     void slotOnCameraChanged(const CameraInfo& camera);
+    
+    // 模式切换槽
+    void slotOnModeChanged(AIMode mode);
 
     signals:
             void sigJoinChannelSuccess(std::string
@@ -109,6 +114,7 @@ private:
     QPoint m_prevGlobalPoint;
     QSharedPointer <LoginWidget> m_loginWidget;
     QSharedPointer <OperateWidget> m_operateWidget;
+    QSharedPointer <ModeWidget> m_modeWidget;
     bytertc::IRTCEngine* m_rtc_video = nullptr;
     bytertc::IRTCRoom* m_rtc_room = nullptr;
     std::string m_uid;

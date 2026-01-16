@@ -69,6 +69,9 @@ void AIGCApi::startVoiceChat()
 
     QJsonObject body;
     body["SceneID"] = m_sceneId;
+    // 传入当前客户端所在的 RoomId 和 UserId，确保 AI 加入同一房间
+    body["RoomId"] = m_rtcConfig.roomId;
+    body["UserId"] = m_rtcConfig.userId;
 
     m_startReply = m_networkManager->post(request, QJsonDocument(body).toJson());
     connect(m_startReply, &QNetworkReply::finished, this, &AIGCApi::onStartVoiceChatReply);

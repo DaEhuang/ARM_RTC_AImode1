@@ -50,12 +50,21 @@ app.use(async ctx => {
       let body = {};
       switch(Action) {
         case 'StartVoiceChat':
-          // 使用 RTCConfig 中的 RoomId（由 getScenes 生成）
+          // 优先使用客户端传入的 RoomId 和 UserId（用于模式切换场景）
+          // 如果没有传入，则使用 RTCConfig 中的值（由 getScenes 生成）
           const { RTCConfig: rtc = {} } = JSONData;
-          if (rtc.RoomId) {
+          const clientRoomId = ctx.request.body.RoomId;
+          const clientUserId = ctx.request.body.UserId;
+          
+          if (clientRoomId) {
+            VoiceChat.RoomId = clientRoomId;
+          } else if (rtc.RoomId) {
             VoiceChat.RoomId = rtc.RoomId;
           }
-          if (rtc.UserId) {
+          
+          if (clientUserId) {
+            VoiceChat.AgentConfig.TargetUserId[0] = clientUserId;
+          } else if (rtc.UserId) {
             VoiceChat.AgentConfig.TargetUserId[0] = rtc.UserId;
           }
           body = VoiceChat;

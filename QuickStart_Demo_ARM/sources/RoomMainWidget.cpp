@@ -16,6 +16,7 @@
 #include "ExternalAudioSource.h"
 #include "ExternalAudioRender.h"
 #include "ConversationWidget.h"
+#include "ModeWidget.h"
 #include "rtc/bytertc_audio_device_manager.h"
 #include <QPushButton>
 #include <QLabel>
@@ -133,6 +134,7 @@ void RoomMainWidget::setupView() {
 
     m_loginWidget = QSharedPointer<LoginWidget>::create(this);
     m_operateWidget = QSharedPointer<OperateWidget>::create(this);
+    m_modeWidget = QSharedPointer<ModeWidget>::create(this);
     toggleShowFloatWidget(false);
     
     // 初始布局
@@ -316,6 +318,7 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
 void RoomMainWidget::toggleShowFloatWidget(bool isEnterRoom) {
     m_loginWidget->setVisible(!isEnterRoom);
     m_operateWidget->setVisible(isEnterRoom);
+    m_modeWidget->setVisible(isEnterRoom);
     if (m_closeBtn) {
         m_closeBtn->setVisible(isEnterRoom);
     }
@@ -687,9 +690,8 @@ void RoomMainWidget::setupSignals() {
         }
     });
     
-    // AIGC 信号连接
-    connect(m_operateWidget.get(), &OperateWidget::sigStartAI, this, &RoomMainWidget::slotOnStartAI);
-    connect(m_operateWidget.get(), &OperateWidget::sigStopAI, this, &RoomMainWidget::slotOnStopAI);
+    // 模式切换信号连接
+    connect(m_modeWidget.get(), &ModeWidget::sigModeChanged, this, &RoomMainWidget::slotOnModeChanged);
     
     // 摄像头切换信号连接
     connect(m_operateWidget.get(), &OperateWidget::sigCameraChanged, this, &RoomMainWidget::slotOnCameraChanged);
@@ -713,7 +715,6 @@ void RoomMainWidget::slotOnStartAI() {
     }
     
     qDebug() << "Starting AI...";
-    m_operateWidget->setAILoading(true);
     
     // 显示"AI 准备中"状态
     if (m_conversationWidget) {
@@ -735,8 +736,54 @@ void RoomMainWidget::slotOnStopAI() {
     }
     
     qDebug() << "Stopping AI...";
-    m_operateWidget->setAILoading(true);
     m_aigcApi->stopVoiceChat();
+}
+
+void RoomMainWidget::slotOnModeChanged(AIMode mode) {
+    QString modeName;
+    QString sceneId;
+    
+    switch (mode) {
+        case AIMode::Chat:
+            modeName = "闲聊";
+            sceneId = "Chat";
+            break;
+        case AIMode::Supervise:
+            modeName = "监督";
+            sceneId = "Custom";  // 暂时使用 Custom
+            break;
+        case AIMode::Teach:
+            modeName = "教学";
+            sceneId = "Custom";
+            break;
+        case AIMode::Standby:
+            modeName = "待机";
+            sceneId = "";  // 待机模式不启动 AI
+            break;
+    }
+    
+    qDebug() << "Mode changed to:" << modeName;
+    
+    // 清空聊天记录
+    if (m_conversationWidget) {
+        m_conversationWidget->clearMessages();
+    }
+    
+    // 如果当前 AI 已启动，先停止
+    if (m_aiStarted) {
+        slotOnStopAI();
+    }
+    
+    // 如果不是待机模式，启动对应的 AI
+    if (mode != AIMode::Standby && !sceneId.isEmpty()) {
+        // 设置场景 ID
+        m_aigcApi->setSceneId(sceneId);
+        
+        // 短暂延迟后启动 AI
+        QTimer::singleShot(800, this, [this]() {
+            slotOnStartAI();
+        });
+    }
 }
 
 void RoomMainWidget::slotOnGetScenesSuccess(const AIGCApi::RTCConfig& config) {
@@ -750,15 +797,9 @@ void RoomMainWidget::slotOnGetScenesSuccess(const AIGCApi::RTCConfig& config) {
     
     m_useServerConfig = true;
     
-    // 更新 LoginWidget 使用服务器配置
-    if (m_loginWidget) {
-        m_loginWidget->setServerConfig(config.roomId, config.userId, config.sceneName);
-    }
-    
-    // 启用 AI 按钮
-    if (m_operateWidget) {
-        m_operateWidget->setAIEnabled(true);
-    }
+    // 自动进入房间（跳过登录页）
+    qDebug() << "自动进入房间...";
+    slotOnEnterRoom(config.roomId, config.userId);
 }
 
 void RoomMainWidget::slotOnGetScenesFailed(const QString& error) {
@@ -770,19 +811,15 @@ void RoomMainWidget::slotOnGetScenesFailed(const QString& error) {
         m_loginWidget->setConfigError(error);
     }
     
-    // 禁用 AI 按钮
-    if (m_operateWidget) {
-        m_operateWidget->setAIEnabled(false);
-    }
 }
 
 void RoomMainWidget::slotOnStartVoiceChatSuccess() {
     qDebug() << "AI 启动成功！";
     m_aiStarted = true;
     
-    if (m_operateWidget) {
-        m_operateWidget->setAILoading(false);
-        m_operateWidget->setAIStarted(true);
+    // 更新 AI 准备状态
+    if (m_conversationWidget) {
+        m_conversationWidget->setAIReady(true);
     }
 }
 
@@ -790,9 +827,9 @@ void RoomMainWidget::slotOnStartVoiceChatFailed(const QString& error) {
     qDebug() << "AI 启动失败:" << error;
     m_aiStarted = false;
     
-    if (m_operateWidget) {
-        m_operateWidget->setAILoading(false);
-        m_operateWidget->setAIStarted(false);
+    // 切换回待机模式
+    if (m_modeWidget) {
+        m_modeWidget->setMode(AIMode::Standby);
     }
     
     QMessageBox::warning(this, QStringLiteral(u"AI 启动失败"), 
@@ -803,19 +840,10 @@ void RoomMainWidget::slotOnStartVoiceChatFailed(const QString& error) {
 void RoomMainWidget::slotOnStopVoiceChatSuccess() {
     qDebug() << "AI 已停止";
     m_aiStarted = false;
-    
-    if (m_operateWidget) {
-        m_operateWidget->setAILoading(false);
-        m_operateWidget->setAIStarted(false);
-    }
 }
 
 void RoomMainWidget::slotOnStopVoiceChatFailed(const QString& error) {
     qDebug() << "AI 停止失败:" << error;
-    
-    if (m_operateWidget) {
-        m_operateWidget->setAILoading(false);
-    }
 }
 
 // ==================== 摄像头切换槽函数 ====================
