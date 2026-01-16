@@ -18,6 +18,7 @@
 #include "ConversationWidget.h"
 #include "ModeWidget.h"
 #include "RoomManager.h"
+#include "MediaManager.h"
 #include "rtc/bytertc_audio_device_manager.h"
 #include <QPushButton>
 #include <QLabel>
@@ -231,24 +232,15 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
     
     bytertc::IRTCEngine* engine = m_roomManager->getEngine();
 
-    // 配置音频设备 - 选择 USB 音频设备 (Yundea M1066)
-    setupAudioDevices();
-
-    bytertc::VideoEncoderConfig conf;
-    conf.frame_rate = 15;
-    conf.width = 360;
-    conf.height = 640;
-    // 设置视频发布参数
-    engine->setVideoEncoderConfig(conf);
-
+    // 初始化媒体管理器
+    if (!m_mediaManager) {
+        m_mediaManager = new MediaManager(this);
+    }
+    m_mediaManager->initialize(engine);
+    
     // 如果是空的stream_id，RTC会自动生成
     std::string stream_id = "";
     std::string uidStr = userID.toStdString();
-    
-    // 使用外部视频源 (libcamera) 替代内部采集
-    // 树莓派5的摄像头使用libcamera系统，SDK无法直接访问
-    engine->setVideoSourceType(bytertc::kVideoSourceTypeExternal);
-    qDebug() << "Set video source type to external";
     
     // 设置自定义视频渲染器用于本地预览 (使用视频背景)
     if (m_useGPURendering && m_videoBackgroundGL) {
@@ -257,39 +249,8 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
         setupCustomVideoSink(true, stream_id, uidStr, m_videoBackground);
     }
     
-    // 启动外部视频源捕获
-    if (!m_externalVideoSource) {
-        m_externalVideoSource = new ExternalVideoSource(this);
-    }
-    m_externalVideoSource->setRTCEngine(engine);
-    m_externalVideoSource->startCapture();
-    qDebug() << "External video source started";
-    
-    // 尝试使用外部音频源 (SDK 在 Linux ARM 上无法枚举音频设备)
-    int audioSourceRet = engine->setAudioSourceType(bytertc::kAudioSourceTypeExternal);
-    qDebug() << "setAudioSourceType(External) ret:" << audioSourceRet;
-    
-    if (audioSourceRet == 0) {
-        // 外部音频源可用，启动外部音频采集
-        if (!m_externalAudioSource) {
-            m_externalAudioSource = new ExternalAudioSource(this);
-        }
-        m_externalAudioSource->setRTCEngine(engine);
-        m_externalAudioSource->startCapture();
-        qDebug() << "External audio source started";
-    } else {
-        // 外部音频源不可用，尝试内部采集
-        qDebug() << "External audio source not available, trying internal capture";
-        engine->startAudioCapture();
-    }
-    
-    // 使用 IAudioFrameObserver 回调方式获取远端音频并播放
-    if (!m_externalAudioRender) {
-        m_externalAudioRender = new ExternalAudioRender(this);
-    }
-    m_externalAudioRender->setRTCEngine(engine);
-    m_externalAudioRender->startRender();
-    qDebug() << "External audio render started (callback mode)";
+    // 启动所有媒体
+    m_mediaManager->startAll();
 
     // 加入房间 - 使用服务器配置的 Token 或本地生成
     QString token;
@@ -326,17 +287,9 @@ void RoomMainWidget::slotOnHangup() {
         m_aiManager->stopAI();
     }
     
-    // 停止外部视频源
-    if (m_externalVideoSource) {
-        m_externalVideoSource->stopCapture();
-    }
-    
-    // 停止外部音频源和渲染
-    if (m_externalAudioSource) {
-        m_externalAudioSource->stopCapture();
-    }
-    if (m_externalAudioRender) {
-        m_externalAudioRender->stopRender();
+    // 停止所有媒体
+    if (m_mediaManager) {
+        m_mediaManager->stopAll();
     }
     
     // 使用 RoomManager 离开房间和销毁引擎
@@ -541,72 +494,6 @@ void RoomMainWidget::setupCustomVideoSink(bool isLocal, const std::string &strea
     }
 }
 
-void RoomMainWidget::setupAudioDevices() {
-    bytertc::IRTCEngine* engine = m_roomManager ? m_roomManager->getEngine() : nullptr;
-    if (!engine) {
-        qDebug() << "setupAudioDevices: RTC engine is null";
-        return;
-    }
-    
-    bytertc::IAudioDeviceManager* audioManager = engine->getAudioDeviceManager();
-    if (!audioManager) {
-        qDebug() << "setupAudioDevices: Failed to get audio device manager";
-        return;
-    }
-    
-    // 不跟随系统设置，手动选择设备
-    audioManager->followSystemCaptureDevice(false);
-    audioManager->followSystemPlaybackDevice(false);
-    
-    // 枚举并选择音频采集设备 (麦克风)
-    bytertc::IAudioDeviceCollection* captureDevices = audioManager->enumerateAudioCaptureDevices();
-    if (captureDevices) {
-        int count = captureDevices->getCount();
-        qDebug() << "Found" << count << "audio capture devices";
-        
-        char deviceName[bytertc::MAX_DEVICE_ID_LENGTH];
-        char deviceId[bytertc::MAX_DEVICE_ID_LENGTH];
-        
-        for (int i = 0; i < count; i++) {
-            if (captureDevices->getDevice(i, deviceName, deviceId) == 0) {
-                qDebug() << "  Capture device" << i << ":" << deviceName << "ID:" << deviceId;
-                // 选择包含 "USB" 或 "M1066" 的设备
-                QString name = QString::fromUtf8(deviceName);
-                if (name.contains("USB", Qt::CaseInsensitive) || name.contains("M1066", Qt::CaseInsensitive)) {
-                    int ret = audioManager->setAudioCaptureDevice(deviceId);
-                    qDebug() << "Selected capture device:" << deviceName << "ret:" << ret;
-                    break;
-                }
-            }
-        }
-        captureDevices->release();
-    }
-    
-    // 枚举并选择音频播放设备 (喇叭)
-    bytertc::IAudioDeviceCollection* playbackDevices = audioManager->enumerateAudioPlaybackDevices();
-    if (playbackDevices) {
-        int count = playbackDevices->getCount();
-        qDebug() << "Found" << count << "audio playback devices";
-        
-        char deviceName[bytertc::MAX_DEVICE_ID_LENGTH];
-        char deviceId[bytertc::MAX_DEVICE_ID_LENGTH];
-        
-        for (int i = 0; i < count; i++) {
-            if (playbackDevices->getDevice(i, deviceName, deviceId) == 0) {
-                qDebug() << "  Playback device" << i << ":" << deviceName << "ID:" << deviceId;
-                // 选择包含 "USB" 或 "M1066" 的设备
-                QString name = QString::fromUtf8(deviceName);
-                if (name.contains("USB", Qt::CaseInsensitive) || name.contains("M1066", Qt::CaseInsensitive)) {
-                    int ret = audioManager->setAudioPlaybackDevice(deviceId);
-                    qDebug() << "Selected playback device:" << deviceName << "ret:" << ret;
-                    break;
-                }
-            }
-        }
-        playbackDevices->release();
-    }
-}
-
 void RoomMainWidget::setupSignals() {
     connect(this, &RoomMainWidget::sigUserEnter, this, [=](const QString &streamID, const QString &userID) {
         qDebug() << "Remote user entered:" << userID;
@@ -653,9 +540,8 @@ void RoomMainWidget::setupSignals() {
 
     connect(m_operateWidget.get(), &OperateWidget::sigMuteSpeaker, this, [this](bool bMute) {
         qDebug() << "sigMuteSpeaker received, mute:" << bMute;
-        if (m_externalAudioRender) {
-            m_externalAudioRender->setMute(bMute);
-            qDebug() << "Speaker mute set to:" << bMute;
+        if (m_mediaManager) {
+            m_mediaManager->setSpeakerMute(bMute);
         }
     });
 
@@ -667,16 +553,14 @@ void RoomMainWidget::setupSignals() {
     
     // 音量控制信号
     connect(m_operateWidget.get(), &OperateWidget::sigMicVolumeChanged, this, [this](int volume) {
-        if (m_externalAudioSource) {
-            m_externalAudioSource->setVolume(volume);
-            qDebug() << "Mic volume set to:" << volume;
+        if (m_mediaManager) {
+            m_mediaManager->setMicVolume(volume);
         }
     });
     
     connect(m_operateWidget.get(), &OperateWidget::sigSpeakerVolumeChanged, this, [this](int volume) {
-        if (m_externalAudioRender) {
-            m_externalAudioRender->setVolume(volume);
-            qDebug() << "Speaker volume set to:" << volume;
+        if (m_mediaManager) {
+            m_mediaManager->setSpeakerVolume(volume);
         }
     });
     
@@ -768,26 +652,11 @@ void RoomMainWidget::slotOnAIStopped() {
 void RoomMainWidget::slotOnCameraChanged(const CameraInfo& camera) {
     qDebug() << "RoomMainWidget: switching camera to" << camera.name << "type:" << camera.type;
     
-    if (!m_externalVideoSource) {
-        qDebug() << "ExternalVideoSource not initialized";
+    if (!m_mediaManager) {
+        qDebug() << "MediaManager not initialized";
         return;
     }
     
-    // 停止当前摄像头
-    bool wasCapturing = m_externalVideoSource->isCapturing();
-    if (wasCapturing) {
-        m_externalVideoSource->stopCapture();
-        // 等待线程完全停止
-        QThread::msleep(100);
-    }
-    
-    // 切换摄像头
-    m_externalVideoSource->setCamera(camera);
-    
-    // 如果之前在采集，重新启动
-    if (wasCapturing) {
-        m_externalVideoSource->startCapture();
-    }
-    
+    m_mediaManager->setCamera(camera);
     qDebug() << "Camera switched to:" << camera.name;
 }

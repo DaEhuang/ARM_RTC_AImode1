@@ -11,6 +11,7 @@
 #include "ModeWidget.h"
 #include "AIManager.h"
 #include "RoomManager.h"
+#include "MediaManager.h"
 
 class LoginWidget;
 class OperateWidget;
@@ -104,7 +105,6 @@ private:
 
     void setRenderCanvas(bool isLocal, void *view, const std::string &stream_id, const std::string &id);
     void setupCustomVideoSink(bool isLocal, const std::string &stream_id, const std::string &user_id, QWidget* renderWidget);
-    void setupAudioDevices();
     void clearVideoView();
 
 private:
@@ -128,12 +128,8 @@ private:
     CustomVideoSink* m_localVideoSink = nullptr;
     QMap<QString, CustomVideoSink*> m_remoteVideoSinks;
     
-    // 外部视频源 (libcamera)
-    ExternalVideoSource* m_externalVideoSource = nullptr;
-    
-    // 外部音频源和渲染 (ALSA)
-    ExternalAudioSource* m_externalAudioSource = nullptr;
-    ExternalAudioRender* m_externalAudioRender = nullptr;
+    // 媒体管理器
+    MediaManager* m_mediaManager = nullptr;
     
     // AI 管理器
     AIManager* m_aiManager = nullptr;
