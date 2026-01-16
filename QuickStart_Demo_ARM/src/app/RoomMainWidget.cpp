@@ -19,6 +19,7 @@
 #include "ModeWidget.h"
 #include "RoomManager.h"
 #include "MediaManager.h"
+#include "ConfigManager.h"
 #include "rtc/bytertc_audio_device_manager.h"
 #include <QPushButton>
 #include <QLabel>
@@ -92,7 +93,7 @@ RoomMainWidget::RoomMainWidget(QWidget *parent)
     
     // 自动获取场景配置
     qDebug() << "正在从 AIGC Server 获取配置...";
-    m_aiManager->initialize("http://localhost:3001");
+    m_aiManager->initialize(ConfigManager::instance()->serverUrl());
 }
 
 void RoomMainWidget::leaveRoom() {
@@ -219,7 +220,7 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
     }
     
     // 创建引擎 - 使用服务器配置的 AppId 或本地配置
-    QString appId = QString::fromStdString(Constants::APP_ID);
+    QString appId = ConfigManager::instance()->appId();
     if (m_useServerConfig && m_aiManager && m_aiManager->hasConfig()) {
         appId = m_aiManager->getRtcConfig().appId;
         qDebug() << "Using Server AppId:" << appId;
@@ -259,7 +260,10 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
         qDebug() << "Using Server Token";
     } else {
         std::string roomIdStr = roomID.toStdString();
-        token = QString::fromStdString(TokenGenerator::generate(Constants::APP_ID, Constants::APP_KEY, roomIdStr, uidStr));
+        token = QString::fromStdString(TokenGenerator::generate(
+            ConfigManager::instance()->appId().toStdString(),
+            ConfigManager::instance()->appKey().toStdString(),
+            roomIdStr, uidStr));
         qDebug() << "Using locally generated Token";
     }
     

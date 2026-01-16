@@ -68,6 +68,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src/ui/components)
 include_directories(${CMAKE_SOURCE_DIR}/src/core/api)
 include_directories(${CMAKE_SOURCE_DIR}/src/core/rtc)
 include_directories(${CMAKE_SOURCE_DIR}/src/core/media)
+include_directories(${CMAKE_SOURCE_DIR}/src/core/config)
 include_directories(${CMAKE_SOURCE_DIR}/src/drivers/interfaces)
 include_directories(${CMAKE_SOURCE_DIR}/src/drivers/impl/linux)
 include_directories(${CMAKE_SOURCE_DIR}/src/common)
@@ -92,6 +93,7 @@ FILE(GLOB_RECURSE SRC_UI_COMPONENTS "src/ui/components/*.h" "src/ui/components/*
 FILE(GLOB_RECURSE SRC_CORE_API "src/core/api/*.h" "src/core/api/*.cpp")
 FILE(GLOB_RECURSE SRC_CORE_RTC "src/core/rtc/*.h" "src/core/rtc/*.cpp")
 FILE(GLOB_RECURSE SRC_CORE_MEDIA "src/core/media/*.h" "src/core/media/*.cpp")
+FILE(GLOB_RECURSE SRC_CORE_CONFIG "src/core/config/*.h" "src/core/config/*.cpp")
 FILE(GLOB_RECURSE SRC_DRIVERS_INTERFACES "src/drivers/interfaces/*.h")
 FILE(GLOB_RECURSE SRC_DRIVERS "src/drivers/impl/linux/*.h" "src/drivers/impl/linux/*.cpp")
 FILE(GLOB_RECURSE SRC_COMMON "src/common/*.h" "src/common/*.cpp")
@@ -103,6 +105,7 @@ source_group(ui/components FILES ${SRC_UI_COMPONENTS})
 source_group(core/api FILES ${SRC_CORE_API})
 source_group(core/rtc FILES ${SRC_CORE_RTC})
 source_group(core/media FILES ${SRC_CORE_MEDIA})
+source_group(core/config FILES ${SRC_CORE_CONFIG})
 source_group(drivers/interfaces FILES ${SRC_DRIVERS_INTERFACES})
 source_group(drivers FILES ${SRC_DRIVERS})
 source_group(common FILES ${SRC_COMMON})
@@ -115,6 +118,7 @@ list(APPEND ALL_SOURCES_AND_HEADERS
     ${SRC_CORE_API}
     ${SRC_CORE_RTC}
     ${SRC_CORE_MEDIA}
+    ${SRC_CORE_CONFIG}
     ${SRC_DRIVERS_INTERFACES}
     ${SRC_DRIVERS}
     ${SRC_COMMON}

@@ -1,4 +1,5 @@
 #include "MediaManager.h"
+#include "ConfigManager.h"
 #include "ExternalVideoSource.h"
 #include "ExternalAudioSource.h"
 #include "ExternalAudioRender.h"
@@ -27,12 +28,14 @@ void MediaManager::initialize(bytertc::IRTCEngine* engine)
     // 配置音频设备
     setupAudioDevices();
     
-    // 设置视频编码参数
+    // 设置视频编码参数 - 从配置管理器获取
+    ConfigManager* config = ConfigManager::instance();
     bytertc::VideoEncoderConfig conf;
-    conf.frame_rate = 15;
-    conf.width = 360;
-    conf.height = 640;
+    conf.frame_rate = config->videoFrameRate();
+    conf.width = config->videoWidth();
+    conf.height = config->videoHeight();
     m_engine->setVideoEncoderConfig(conf);
+    qDebug() << "MediaManager: Video config:" << conf.width << "x" << conf.height << "@" << conf.frame_rate << "fps";
     
     // 使用外部视频源
     m_engine->setVideoSourceType(bytertc::kVideoSourceTypeExternal);
@@ -251,9 +254,10 @@ void MediaManager::setupAudioDevices()
             captureDevices->getDevice(i, deviceName, deviceId);
             qDebug() << "  Capture device" << i << ":" << deviceName << "(" << deviceId << ")";
             
-            // 选择 USB 音频设备
+            // 选择首选音频设备 - 从配置管理器获取
             QString name = QString::fromUtf8(deviceName);
-            if (name.contains("USB", Qt::CaseInsensitive) || 
+            QString preferredDevice = ConfigManager::instance()->preferredAudioDevice();
+            if (name.contains(preferredDevice, Qt::CaseInsensitive) || 
                 name.contains("Yundea", Qt::CaseInsensitive) ||
                 name.contains("M1066", Qt::CaseInsensitive)) {
                 audioManager->setAudioCaptureDevice(deviceId);
@@ -276,9 +280,10 @@ void MediaManager::setupAudioDevices()
             playbackDevices->getDevice(i, deviceName, deviceId);
             qDebug() << "  Playback device" << i << ":" << deviceName << "(" << deviceId << ")";
             
-            // 选择 USB 音频设备
+            // 选择首选音频设备 - 从配置管理器获取
             QString name = QString::fromUtf8(deviceName);
-            if (name.contains("USB", Qt::CaseInsensitive) || 
+            QString preferredDevice = ConfigManager::instance()->preferredAudioDevice();
+            if (name.contains(preferredDevice, Qt::CaseInsensitive) || 
                 name.contains("Yundea", Qt::CaseInsensitive) ||
                 name.contains("M1066", Qt::CaseInsensitive)) {
                 audioManager->setAudioPlaybackDevice(deviceId);

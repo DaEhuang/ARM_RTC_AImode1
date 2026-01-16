@@ -310,12 +310,12 @@ cd QuickStart_Demo_ARM
 - [x] 任务 2: 抽取 RoomManager
 - [x] 任务 3: 抽取 MediaManager
 - [x] 任务 4: Linux 实现类继承接口 (ExternalVideoSource/AudioSource/AudioRender)
+- [x] 任务 5: 创建 ConfigManager 配置管理器
 
 ### 7.2 待完成
 
 | 优先级 | 任务 | 说明 |
 |--------|------|------|
-| 高 | 配置管理 | 创建 ConfigManager，统一管理 AppId/ServerUrl 等 |
 | 高 | 日志系统 | 创建 Logger 类，统一日志格式和级别 |
 | 中 | 错误处理 | 定义错误码枚举，统一错误处理机制 |
 | 中 | 样式分离 | 将 QSS 样式移至 `ui/styles/` |

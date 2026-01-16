@@ -1,0 +1,19 @@
+{
+    "rtc": {
+        "appId": "68a569ad8f31e0018b7fbd8d",
+        "appKey": "011cde79231e42ae9e89fefd777c2604",
+        "serverUrl": "http://localhost:3001",
+        "inputRegex": "^[a-zA-Z0-9@._-]{1,128}$"
+    },
+    "media": {
+        "preferredAudioDevice": "USB",
+        "video": {
+            "width": 640,
+            "height": 480,
+            "frameRate": 15
+        }
+    },
+    "ui": {
+        "useGPURendering": true
+    }
+}
