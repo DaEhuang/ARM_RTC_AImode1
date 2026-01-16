@@ -116,6 +116,17 @@ void RoomMainWidget::setupView() {
     m_conversationWidget = new ConversationWidget(ui.mainWidget);
     m_conversationWidget->setObjectName("conversationWidget");
     
+    // 待机动画 (覆盖在视频上)
+    m_standbyLabel = new QLabel(ui.mainWidget);
+    m_standbyLabel->setObjectName("standbyLabel");
+    m_standbyLabel->setAlignment(Qt::AlignCenter);
+    m_standbyLabel->setStyleSheet("background: transparent;");
+    m_standbyMovie = new QMovie(":/QuickStart/images/normal.gif");
+    m_standbyLabel->setMovie(m_standbyMovie);
+    m_standbyLabel->setScaledContents(true);
+    m_standbyMovie->start();
+    m_standbyLabel->show();  // 默认显示待机动画
+    
     // 关闭按钮 (右上角)
     m_closeBtn = new QPushButton(ui.mainWidget);
     m_closeBtn->setObjectName("closeBtn");
@@ -181,6 +192,11 @@ void RoomMainWidget::resizeEvent(QResizeEvent *event) {
             mainRect.width() - sideMargin * 2,
             mainRect.height() - topMargin - bottomMargin
         );
+    }
+    
+    // 待机动画填满整个区域
+    if (m_standbyLabel) {
+        m_standbyLabel->setGeometry(mainRect);
     }
     
     // 关闭按钮在右上角
@@ -593,6 +609,9 @@ void RoomMainWidget::slotOnModeChanged(AIMode mode) {
         m_conversationWidget->setAIReady(false);
     }
     
+    // 待机模式显示动画，其他模式显示摄像头
+    showStandbyAnimation(mode == AIMode::Standby);
+    
     // 委托给 AIManager 处理模式切换
     if (m_aiManager) {
         m_aiManager->setMode(mode);
@@ -663,4 +682,32 @@ void RoomMainWidget::slotOnCameraChanged(const CameraInfo& camera) {
     
     m_mediaManager->setCamera(camera);
     qDebug() << "Camera switched to:" << camera.name;
+}
+
+// ==================== 待机动画控制 ====================
+
+void RoomMainWidget::showStandbyAnimation(bool show) {
+    if (m_standbyLabel) {
+        if (show) {
+            m_standbyLabel->show();
+            m_standbyLabel->raise();  // 置于顶层
+            if (m_standbyMovie) {
+                m_standbyMovie->start();
+            }
+        } else {
+            m_standbyLabel->hide();
+            if (m_standbyMovie) {
+                m_standbyMovie->stop();
+            }
+        }
+    }
+    
+    // 显示/隐藏视频背景
+    if (m_useGPURendering && m_videoBackgroundGL) {
+        m_videoBackgroundGL->setVisible(!show);
+    } else if (m_videoBackground) {
+        m_videoBackground->setVisible(!show);
+    }
+    
+    qDebug() << "Standby animation:" << (show ? "shown" : "hidden");
 }

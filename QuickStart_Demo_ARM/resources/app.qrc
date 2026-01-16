@@ -13,6 +13,8 @@
         <file>images/speaker_hover.bmp</file>
         <file>images/speaker_disable.bmp</file>
         <file>images/wclose.bmp</file>
+        <file>images/normal.gif</file>
+        <file>images/open.gif</file>
         <file>app.ico</file>
     </qresource>
 </RCC>

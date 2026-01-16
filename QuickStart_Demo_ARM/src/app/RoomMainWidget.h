@@ -2,6 +2,8 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QSharedPointer>
+#include <QLabel>
+#include <QMovie>
 #include "ui_RoomMainWidget.h"
 #include "bytertc_engine.h"
 #include "bytertc_room.h"
@@ -134,4 +136,10 @@ private:
     // AI 管理器
     AIManager* m_aiManager = nullptr;
     bool m_useServerConfig = false;  // 是否使用服务器配置
+    
+    // 待机动画
+    QLabel* m_standbyLabel = nullptr;
+    QMovie* m_standbyMovie = nullptr;
+    
+    void showStandbyAnimation(bool show);
 };
