@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QObject>
 #include <QList>
 #include <QString>
 
@@ -21,12 +20,12 @@ struct CameraInfo {
 /**
  * 视频源接口
  * 抽象视频采集功能，支持不同平台实现
+ * 
+ * 注意：这是纯抽象接口，不继承 QObject 以避免菱形继承
+ * 实现类需要自己继承 QObject/QThread 并定义信号
  */
-class IVideoSource : public QObject {
-    Q_OBJECT
-
+class IVideoSource {
 public:
-    explicit IVideoSource(QObject* parent = nullptr) : QObject(parent) {}
     virtual ~IVideoSource() = default;
 
     // 采集控制
@@ -38,8 +37,4 @@ public:
     virtual QList<CameraInfo> detectCameras() = 0;
     virtual void setCamera(const CameraInfo& camera) = 0;
     virtual CameraInfo currentCamera() const = 0;
-
-signals:
-    void cameraError(const QString& error);
-    void frameReady(const QByteArray& frame, int width, int height);
 };

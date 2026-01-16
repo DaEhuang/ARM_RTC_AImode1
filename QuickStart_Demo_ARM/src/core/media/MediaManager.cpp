@@ -150,7 +150,7 @@ bool MediaManager::isAudioRendering() const
 
 QList<CameraInfo> MediaManager::detectCameras()
 {
-    return ExternalVideoSource::detectCameras();
+    return ExternalVideoSource::detectCamerasStatic();
 }
 
 void MediaManager::setCamera(const CameraInfo& camera)

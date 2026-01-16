@@ -198,7 +198,7 @@ void OperateWidget::refreshCameras()
     m_cameraCombo->blockSignals(true);
     m_cameraCombo->clear();
     
-    m_cameras = ExternalVideoSource::detectCameras();
+    m_cameras = ExternalVideoSource::detectCamerasStatic();
     
     // 下拉框显示简短序号，完整名称在下拉列表中显示
     for (int i = 0; i < m_cameras.size(); i++) {

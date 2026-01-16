@@ -70,7 +70,7 @@ CameraInfo ExternalVideoSource::currentCamera() const {
     return m_currentCamera;
 }
 
-QList<CameraInfo> ExternalVideoSource::detectCameras() {
+QList<CameraInfo> ExternalVideoSource::detectCamerasStatic() {
     QList<CameraInfo> cameras;
     
     // 确保 GStreamer 已初始化
@@ -159,6 +159,10 @@ QList<CameraInfo> ExternalVideoSource::detectCameras() {
     
     qDebug() << "ExternalVideoSource: total cameras detected:" << cameras.size();
     return cameras;
+}
+
+QList<CameraInfo> ExternalVideoSource::detectCameras() {
+    return detectCamerasStatic();
 }
 
 QString ExternalVideoSource::buildPipelineString() {

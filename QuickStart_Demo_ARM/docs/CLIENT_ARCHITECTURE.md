@@ -309,6 +309,7 @@ cd QuickStart_Demo_ARM
 - [x] 任务 1: 集成 AIManager 到 RoomMainWidget
 - [x] 任务 2: 抽取 RoomManager
 - [x] 任务 3: 抽取 MediaManager
+- [x] 任务 4: Linux 实现类继承接口 (ExternalVideoSource/AudioSource/AudioRender)
 
 ### 7.2 待完成
 
@@ -319,8 +320,8 @@ cd QuickStart_Demo_ARM
 | 中 | 错误处理 | 定义错误码枚举，统一错误处理机制 |
 | 中 | 样式分离 | 将 QSS 样式移至 `ui/styles/` |
 | 中 | 单元测试 | 在 `tests/` 添加 Manager 测试 |
-| 低 | Mock 实现 | 在 `drivers/impl/mock/` 添加模拟实现 |
-| 低 | 跨平台支持 | 添加 Windows/macOS 驱动实现 |
+| 低 | Mock 实现 | 在 `drivers/impl/mock/` 添加模拟实现（接口已就绪） |
+| 低 | 跨平台支持 | 添加 Windows/macOS 驱动实现（接口已就绪） |
 
 ### 7.3 代码行数统计
 

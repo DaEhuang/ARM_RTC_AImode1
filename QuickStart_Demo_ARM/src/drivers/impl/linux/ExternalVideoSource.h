@@ -20,24 +20,25 @@
  * 
  * 实现 IVideoSource 接口
  */
-class ExternalVideoSource : public QThread {
+class ExternalVideoSource : public QThread, public IVideoSource {
     Q_OBJECT
 
 public:
     ExternalVideoSource(QObject* parent = nullptr);
-    ~ExternalVideoSource();
+    ~ExternalVideoSource() override;
 
     void setRTCEngine(bytertc::IRTCEngine* engine);
     
     // IVideoSource 接口实现
-    void startCapture();
-    void stopCapture();
-    bool isCapturing() const;
+    void startCapture() override;
+    void stopCapture() override;
+    bool isCapturing() const override;
     
     // 摄像头管理
-    static QList<CameraInfo> detectCameras();
-    void setCamera(const CameraInfo& camera);
-    CameraInfo currentCamera() const;
+    static QList<CameraInfo> detectCamerasStatic();
+    QList<CameraInfo> detectCameras() override;
+    void setCamera(const CameraInfo& camera) override;
+    CameraInfo currentCamera() const override;
     
 signals:
     void cameraError(const QString& error);

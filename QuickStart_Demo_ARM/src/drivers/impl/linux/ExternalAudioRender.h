@@ -6,31 +6,32 @@
 #include <atomic>
 #include "bytertc_engine.h"
 #include "rtc/bytertc_audio_frame.h"
+#include "drivers/interfaces/IAudioRender.h"
 
 /**
  * 外部音频渲染
  * 通过 IAudioFrameObserver 回调获取远端音频并通过 ALSA 播放
  * 解决树莓派上 SDK 无法枚举音频设备的问题
+ * 
+ * 实现 IAudioRender 接口
  */
-class ExternalAudioRender : public QThread, public bytertc::IAudioFrameObserver {
+class ExternalAudioRender : public QThread, public IAudioRender, public bytertc::IAudioFrameObserver {
     Q_OBJECT
 
 public:
     ExternalAudioRender(QObject* parent = nullptr);
-    ~ExternalAudioRender();
+    ~ExternalAudioRender() override;
 
     void setRTCEngine(bytertc::IRTCEngine* engine);
-    void startRender();
-    void stopRender();
-    bool isRendering() const;
     
-    // 音量控制 (0-100)
-    void setVolume(int volume);
-    int getVolume() const;
-    
-    // 静音控制
-    void setMute(bool mute);
-    bool isMuted() const;
+    // IAudioRender 接口实现
+    void startRender() override;
+    void stopRender() override;
+    bool isRendering() const override;
+    void setVolume(int volume) override;
+    int getVolume() const override;
+    void setMute(bool mute) override;
+    bool isMuted() const override;
 
     // IAudioFrameObserver 回调
     void onRecordAudioFrameOriginal(const bytertc::IAudioFrame& audio_frame) override {}
