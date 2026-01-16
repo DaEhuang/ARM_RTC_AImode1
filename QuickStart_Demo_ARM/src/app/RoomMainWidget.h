@@ -10,6 +10,7 @@
 #include "ExternalVideoSource.h"
 #include "ModeWidget.h"
 #include "AIManager.h"
+#include "RoomManager.h"
 
 class LoginWidget;
 class OperateWidget;
@@ -113,10 +114,8 @@ private:
     QSharedPointer <LoginWidget> m_loginWidget;
     QSharedPointer <OperateWidget> m_operateWidget;
     QSharedPointer <ModeWidget> m_modeWidget;
-    bytertc::IRTCEngine* m_rtc_video = nullptr;
-    bytertc::IRTCRoom* m_rtc_room = nullptr;
-    std::string m_uid;
-    std::string m_roomId;
+    // RTC 房间管理器
+    RoomManager* m_roomManager = nullptr;
     
     // 新 UI: 视频背景 + 对话字幕
     VideoRenderWidget* m_videoBackground = nullptr;        // CPU 渲染 (备用)

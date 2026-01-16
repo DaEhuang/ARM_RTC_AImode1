@@ -17,6 +17,7 @@
 #include "ExternalAudioRender.h"
 #include "ConversationWidget.h"
 #include "ModeWidget.h"
+#include "RoomManager.h"
 #include "rtc/bytertc_audio_device_manager.h"
 #include <QPushButton>
 #include <QLabel>
@@ -199,8 +200,6 @@ void RoomMainWidget::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userID) {
-    m_uid = userID.toStdString();
-    m_roomId = roomID.toStdString();
     toggleShowFloatWidget(true);
     
     // 设置对话组件的用户名
@@ -213,20 +212,24 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
         }
     }
 
-    // 创建引擎 - 使用服务器配置的 AppId 或本地配置
-    bytertc::EngineConfig config;
-    std::string appId = Constants::APP_ID;
-    if (m_useServerConfig && m_aiManager && m_aiManager->hasConfig()) {
-        appId = m_aiManager->getRtcConfig().appId.toStdString();
-        qDebug() << "Using Server AppId:" << appId.c_str();
+    // 创建 RoomManager
+    if (!m_roomManager) {
+        m_roomManager = new RoomManager(this);
     }
-    config.app_id = appId.c_str();
-    config.parameters = "";
-    m_rtc_video = bytertc::IRTCEngine::createRTCEngine(config, this);
-    if (m_rtc_video == nullptr) {
+    
+    // 创建引擎 - 使用服务器配置的 AppId 或本地配置
+    QString appId = QString::fromStdString(Constants::APP_ID);
+    if (m_useServerConfig && m_aiManager && m_aiManager->hasConfig()) {
+        appId = m_aiManager->getRtcConfig().appId;
+        qDebug() << "Using Server AppId:" << appId;
+    }
+    
+    if (!m_roomManager->createEngine(appId, this)) {
         qWarning() << "create engine failed";
         return;
     }
+    
+    bytertc::IRTCEngine* engine = m_roomManager->getEngine();
 
     // 配置音频设备 - 选择 USB 音频设备 (Yundea M1066)
     setupAudioDevices();
@@ -236,33 +239,34 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
     conf.width = 360;
     conf.height = 640;
     // 设置视频发布参数
-    m_rtc_video->setVideoEncoderConfig(conf);
+    engine->setVideoEncoderConfig(conf);
 
     // 如果是空的stream_id，RTC会自动生成
     std::string stream_id = "";
+    std::string uidStr = userID.toStdString();
     
     // 使用外部视频源 (libcamera) 替代内部采集
     // 树莓派5的摄像头使用libcamera系统，SDK无法直接访问
-    m_rtc_video->setVideoSourceType(bytertc::kVideoSourceTypeExternal);
+    engine->setVideoSourceType(bytertc::kVideoSourceTypeExternal);
     qDebug() << "Set video source type to external";
     
     // 设置自定义视频渲染器用于本地预览 (使用视频背景)
     if (m_useGPURendering && m_videoBackgroundGL) {
-        setupCustomVideoSink(true, stream_id, m_uid, m_videoBackgroundGL);
+        setupCustomVideoSink(true, stream_id, uidStr, m_videoBackgroundGL);
     } else {
-        setupCustomVideoSink(true, stream_id, m_uid, m_videoBackground);
+        setupCustomVideoSink(true, stream_id, uidStr, m_videoBackground);
     }
     
     // 启动外部视频源捕获
     if (!m_externalVideoSource) {
         m_externalVideoSource = new ExternalVideoSource(this);
     }
-    m_externalVideoSource->setRTCEngine(m_rtc_video);
+    m_externalVideoSource->setRTCEngine(engine);
     m_externalVideoSource->startCapture();
     qDebug() << "External video source started";
     
     // 尝试使用外部音频源 (SDK 在 Linux ARM 上无法枚举音频设备)
-    int audioSourceRet = m_rtc_video->setAudioSourceType(bytertc::kAudioSourceTypeExternal);
+    int audioSourceRet = engine->setAudioSourceType(bytertc::kAudioSourceTypeExternal);
     qDebug() << "setAudioSourceType(External) ret:" << audioSourceRet;
     
     if (audioSourceRet == 0) {
@@ -270,48 +274,36 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
         if (!m_externalAudioSource) {
             m_externalAudioSource = new ExternalAudioSource(this);
         }
-        m_externalAudioSource->setRTCEngine(m_rtc_video);
+        m_externalAudioSource->setRTCEngine(engine);
         m_externalAudioSource->startCapture();
         qDebug() << "External audio source started";
     } else {
         // 外部音频源不可用，尝试内部采集
         qDebug() << "External audio source not available, trying internal capture";
-        m_rtc_video->startAudioCapture();
+        engine->startAudioCapture();
     }
     
     // 使用 IAudioFrameObserver 回调方式获取远端音频并播放
     if (!m_externalAudioRender) {
         m_externalAudioRender = new ExternalAudioRender(this);
     }
-    m_externalAudioRender->setRTCEngine(m_rtc_video);
+    m_externalAudioRender->setRTCEngine(engine);
     m_externalAudioRender->startRender();
     qDebug() << "External audio render started (callback mode)";
 
-    m_rtc_room = m_rtc_video->createRTCRoom(m_roomId.c_str());
-    m_rtc_room->setRTCRoomEventHandler(this);
-    bytertc::UserInfo userInfo;
-    userInfo.uid = m_uid.c_str();
-    userInfo.extra_info = nullptr;
-
-    bytertc::RTCRoomConfig roomConfig;
-    roomConfig.stream_id = stream_id.c_str();
-    roomConfig.is_auto_publish_audio = true;
-    roomConfig.is_auto_publish_video = true;
-    roomConfig.is_auto_subscribe_audio = true;
-    roomConfig.is_auto_subscribe_video = true;
-    roomConfig.room_profile_type = bytertc::kRoomProfileTypeCommunication;
     // 加入房间 - 使用服务器配置的 Token 或本地生成
-    std::string token;
+    QString token;
     if (m_useServerConfig && m_aiManager && m_aiManager->hasConfig()) {
-        token = m_aiManager->getRtcConfig().token.toStdString();
+        token = m_aiManager->getRtcConfig().token;
         qDebug() << "Using Server Token";
     } else {
-        token = TokenGenerator::generate(Constants::APP_ID, Constants::APP_KEY, m_roomId, m_uid);
+        std::string roomIdStr = roomID.toStdString();
+        token = QString::fromStdString(TokenGenerator::generate(Constants::APP_ID, Constants::APP_KEY, roomIdStr, uidStr));
         qDebug() << "Using locally generated Token";
     }
-    m_rtc_room->joinRoom(token.c_str(), userInfo, true, roomConfig);
-
-    qDebug() << "joinroom, token:" << token.c_str() << ",uid:" << userInfo.uid << ",roomid:" << m_roomId.c_str();
+    
+    m_roomManager->joinRoom(roomID, userID, token, this);
+    qDebug() << "joinroom, uid:" << userID << ",roomid:" << roomID;
 }
 
 void RoomMainWidget::toggleShowFloatWidget(bool isEnterRoom) {
@@ -347,15 +339,10 @@ void RoomMainWidget::slotOnHangup() {
         m_externalAudioRender->stopRender();
     }
     
-    if (m_rtc_room) {
-        // 离开房间
-        m_rtc_room->leaveRoom();
-        m_rtc_room->destroy();
-        m_rtc_room = nullptr;
+    // 使用 RoomManager 离开房间和销毁引擎
+    if (m_roomManager) {
+        m_roomManager->destroyEngine();
     }
-    // 销毁引擎
-    bytertc::IRTCEngine::destroyRTCEngine();
-    m_rtc_video = nullptr;
     if (m_operateWidget)
     {
         m_operateWidget->reset();
@@ -432,7 +419,7 @@ void RoomMainWidget::onRoomBinaryMessageReceived(const char* uid, int size, cons
             
             if (!text.isEmpty() && m_conversationWidget) {
                 // 判断是用户还是 AI
-                bool isUser = (msgUserId == QString::fromStdString(m_uid));
+                bool isUser = (msgUserId == (m_roomManager ? m_roomManager->getUserId() : QString()));
                 
                 qDebug() << "Subtitle:" << (isUser ? "User" : "AI") << text << "definite:" << definite;
                 
@@ -470,7 +457,8 @@ void RoomMainWidget::onFirstRemoteVideoFrameDecoded(const char* stream_id, const
 }
 
 void RoomMainWidget::setRenderCanvas(bool isLocal, void *view, const std::string &stream_id, const std::string &user_id) {
-    if (m_rtc_video == nullptr) {
+    bytertc::IRTCEngine* engine = m_roomManager ? m_roomManager->getEngine() : nullptr;
+    if (engine == nullptr) {
         qDebug() << "byte engine is null ptr";
     }
 
@@ -480,19 +468,20 @@ void RoomMainWidget::setRenderCanvas(bool isLocal, void *view, const std::string
 
     if (isLocal) {
         // 设置本地视频渲染视图
-        m_rtc_video->setLocalVideoCanvas(canvas);
+        engine->setLocalVideoCanvas(canvas);
     } else {
         // 设置远端用户视频渲染视图
         // bytertc::RemoteStreamKey remote_stream_key;
         // remote_stream_key.room_id = m_roomId.c_str();
         // remote_stream_key.user_id = user_id.c_str();
         // remote_stream_key.stream_index = bytertc::kStreamIndexMain;
-        m_rtc_video->setRemoteVideoCanvas(stream_id.c_str(), canvas);
+        engine->setRemoteVideoCanvas(stream_id.c_str(), canvas);
     }
 }
 
 void RoomMainWidget::setupCustomVideoSink(bool isLocal, const std::string &stream_id, const std::string &user_id, QWidget* renderWidget) {
-    if (m_rtc_video == nullptr || renderWidget == nullptr) {
+    bytertc::IRTCEngine* engine = m_roomManager ? m_roomManager->getEngine() : nullptr;
+    if (engine == nullptr || renderWidget == nullptr) {
         qDebug() << "setupCustomVideoSink: invalid parameters";
         return;
     }
@@ -525,7 +514,7 @@ void RoomMainWidget::setupCustomVideoSink(bool isLocal, const std::string &strea
         // 本地视频
         bytertc::LocalVideoSinkConfig config;
         config.pixel_format = bytertc::kVideoPixelFormatI420;
-        int ret = m_rtc_video->setLocalVideoSink(videoSink, config);
+        int ret = engine->setLocalVideoSink(videoSink, config);
         qDebug() << "setLocalVideoSink returned:" << ret;
         
         // 保存引用
@@ -539,7 +528,7 @@ void RoomMainWidget::setupCustomVideoSink(bool isLocal, const std::string &strea
         // 远端视频
         bytertc::RemoteVideoSinkConfig config;
         config.pixel_format = bytertc::kVideoPixelFormatI420;
-        m_rtc_video->setRemoteVideoSink(stream_id.c_str(), videoSink, config);
+        engine->setRemoteVideoSink(stream_id.c_str(), videoSink, config);
         
         // 保存引用
         QString qUserId = QString::fromStdString(user_id);
@@ -553,12 +542,13 @@ void RoomMainWidget::setupCustomVideoSink(bool isLocal, const std::string &strea
 }
 
 void RoomMainWidget::setupAudioDevices() {
-    if (!m_rtc_video) {
+    bytertc::IRTCEngine* engine = m_roomManager ? m_roomManager->getEngine() : nullptr;
+    if (!engine) {
         qDebug() << "setupAudioDevices: RTC engine is null";
         return;
     }
     
-    bytertc::IAudioDeviceManager* audioManager = m_rtc_video->getAudioDeviceManager();
+    bytertc::IAudioDeviceManager* audioManager = engine->getAudioDeviceManager();
     if (!audioManager) {
         qDebug() << "setupAudioDevices: Failed to get audio device manager";
         return;
@@ -628,26 +618,28 @@ void RoomMainWidget::setupSignals() {
     });
 
     connect(m_operateWidget.get(), &OperateWidget::sigMuteAudio, this, [this](bool bMute) {
-        if (m_rtc_room) {
+        bytertc::IRTCRoom* room = m_roomManager ? m_roomManager->getRoom() : nullptr;
+        if (room) {
             if (bMute) {
                 // 关闭本地音频发送
-                m_rtc_room->publishStreamAudio(false);
+                room->publishStreamAudio(false);
             }
             else {
                 // 开启本地音频发送
-                m_rtc_room->publishStreamAudio(true);
+                room->publishStreamAudio(true);
             }
         }
     });
 
     connect(m_operateWidget.get(), &OperateWidget::sigMuteVideo, this, [this](bool bMute) {
-        if (m_rtc_video) {
+        bytertc::IRTCEngine* engine = m_roomManager ? m_roomManager->getEngine() : nullptr;
+        if (engine) {
             if (bMute) {
                 // 关闭视频采集
-                m_rtc_video->stopVideoCapture();
+                engine->stopVideoCapture();
             } else {
                 // 开启视频采集
-                m_rtc_video->startVideoCapture();
+                engine->startVideoCapture();
             }
             QTimer::singleShot(10, this, [=] {
                 if (m_useGPURendering && m_videoBackgroundGL) {
