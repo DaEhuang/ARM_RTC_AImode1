@@ -8,24 +8,17 @@
 #include <string>
 #include "bytertc_engine.h"
 #include "rtc/bytertc_video_frame.h"
+#include "drivers/interfaces/IVideoSource.h"
 
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 
 /**
- * 摄像头信息结构
- */
-struct CameraInfo {
-    QString id;         // 唯一标识: "CSI" 或 "USB:0", "USB:2" 等
-    QString name;       // 显示名称
-    QString type;       // "CSI" 或 "USB"
-    int deviceIndex;    // USB摄像头的 /dev/video 索引
-};
-
-/**
  * 外部视频源 (GStreamer 版本)
  * 支持 CSI 摄像头 (libcamerasrc) 和 USB 摄像头 (v4l2src)
  * 使用 GStreamer 统一管道架构
+ * 
+ * 实现 IVideoSource 接口
  */
 class ExternalVideoSource : public QThread {
     Q_OBJECT
@@ -35,6 +28,8 @@ public:
     ~ExternalVideoSource();
 
     void setRTCEngine(bytertc::IRTCEngine* engine);
+    
+    // IVideoSource 接口实现
     void startCapture();
     void stopCapture();
     bool isCapturing() const;
