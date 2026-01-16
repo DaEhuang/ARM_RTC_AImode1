@@ -1,5 +1,8 @@
 #include "RoomManager.h"
+#include "Logger.h"
 #include <QDebug>
+
+#define LOG_MODULE "RoomManager"
 
 RoomManager::RoomManager(QObject* parent)
     : QObject(parent)
@@ -19,7 +22,7 @@ RoomManager::~RoomManager()
 bool RoomManager::createEngine(const QString& appId, bytertc::IRTCEngineEventHandler* engineHandler)
 {
     if (m_engine) {
-        qWarning() << "RoomManager: Engine already exists";
+        LOG_WARN("Engine already exists");
         return false;
     }
     
@@ -30,12 +33,12 @@ bool RoomManager::createEngine(const QString& appId, bytertc::IRTCEngineEventHan
     
     m_engine = bytertc::IRTCEngine::createRTCEngine(config, engineHandler);
     if (!m_engine) {
-        qWarning() << "RoomManager: Failed to create engine";
+        LOG_ERROR("Failed to create engine");
         emit error("Failed to create RTC engine");
         return false;
     }
     
-    qDebug() << "RoomManager: Engine created with AppId:" << appId;
+    LOG_INFO(QString("Engine created with AppId: %1").arg(appId));
     emit engineCreated();
     return true;
 }
@@ -49,7 +52,7 @@ void RoomManager::destroyEngine()
     if (m_engine) {
         bytertc::IRTCEngine::destroyRTCEngine();
         m_engine = nullptr;
-        qDebug() << "RoomManager: Engine destroyed";
+        LOG_INFO("Engine destroyed");
         emit engineDestroyed();
     }
 }
@@ -58,13 +61,13 @@ bool RoomManager::joinRoom(const QString& roomId, const QString& userId, const Q
                            bytertc::IRTCRoomEventHandler* roomHandler)
 {
     if (!m_engine) {
-        qWarning() << "RoomManager: Engine not created";
+        LOG_ERROR("Engine not created");
         emit error("Engine not created");
         return false;
     }
     
     if (m_room) {
-        qWarning() << "RoomManager: Already in a room";
+        LOG_WARN("Already in a room");
         return false;
     }
     
@@ -77,7 +80,7 @@ bool RoomManager::joinRoom(const QString& roomId, const QString& userId, const Q
     
     m_room = m_engine->createRTCRoom(roomIdStr.c_str());
     if (!m_room) {
-        qWarning() << "RoomManager: Failed to create room";
+        LOG_ERROR("Failed to create room");
         emit error("Failed to create RTC room");
         return false;
     }
@@ -98,7 +101,7 @@ bool RoomManager::joinRoom(const QString& roomId, const QString& userId, const Q
     
     m_room->joinRoom(tokenStr.c_str(), userInfo, true, roomConfig);
     
-    qDebug() << "RoomManager: Joining room" << roomId << "as user" << userId;
+    LOG_INFO(QString("Joining room %1 as user %2").arg(roomId).arg(userId));
     emit roomJoined(roomId, userId);
     return true;
 }
@@ -110,7 +113,7 @@ void RoomManager::leaveRoom()
         m_room->destroy();
         m_room = nullptr;
         
-        qDebug() << "RoomManager: Left room" << m_roomId;
+        LOG_INFO(QString("Left room %1").arg(m_roomId));
         emit roomLeft();
         
         m_roomId.clear();

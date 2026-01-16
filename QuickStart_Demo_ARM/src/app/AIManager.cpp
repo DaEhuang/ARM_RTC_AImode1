@@ -1,6 +1,9 @@
 #include "AIManager.h"
+#include "Logger.h"
 #include <QDebug>
 #include <QTimer>
+
+#define LOG_MODULE "AIManager"
 
 AIManager::AIManager(QObject* parent)
     : QObject(parent)
@@ -44,8 +47,7 @@ void AIManager::setMode(AIMode mode)
     AIMode oldMode = m_currentMode;
     m_currentMode = mode;
     
-    qDebug() << "AIManager: Mode changed from" << static_cast<int>(oldMode) 
-             << "to" << static_cast<int>(mode);
+    LOG_INFO(QString("Mode changed from %1 to %2").arg(static_cast<int>(oldMode)).arg(static_cast<int>(mode)));
     
     // 如果当前 AI 已启动，先停止
     if (m_aiStarted) {
@@ -75,7 +77,7 @@ void AIManager::startAI()
         return;
     }
     
-    qDebug() << "AIManager: Starting AI...";
+    LOG_INFO("Starting AI...");
     
     // 先尝试停止可能存在的旧任务
     m_aigcApi->stopVoiceChat();
@@ -92,7 +94,7 @@ void AIManager::stopAI()
         return;
     }
     
-    qDebug() << "AIManager: Stopping AI...";
+    LOG_INFO("Stopping AI...");
     m_aigcApi->stopVoiceChat();
 }
 
@@ -126,38 +128,38 @@ QString AIManager::getSceneIdForMode(AIMode mode) const
 
 void AIManager::onGetScenesSuccess(const AIGCApi::RTCConfig& config)
 {
-    qDebug() << "AIManager: Config loaded successfully";
+    LOG_INFO("Config loaded successfully");
     emit configLoaded(config);
 }
 
 void AIManager::onGetScenesFailed(const QString& error)
 {
-    qDebug() << "AIManager: Config failed:" << error;
+    LOG_ERROR(QString("Config failed: %1").arg(error));
     emit configFailed(error);
 }
 
 void AIManager::onStartVoiceChatSuccess()
 {
-    qDebug() << "AIManager: AI started successfully";
+    LOG_INFO("AI started successfully");
     m_aiStarted = true;
     emit aiStarted();
 }
 
 void AIManager::onStartVoiceChatFailed(const QString& error)
 {
-    qDebug() << "AIManager: AI start failed:" << error;
+    LOG_ERROR(QString("AI start failed: %1").arg(error));
     m_aiStarted = false;
     emit aiFailed(error);
 }
 
 void AIManager::onStopVoiceChatSuccess()
 {
-    qDebug() << "AIManager: AI stopped successfully";
+    LOG_INFO("AI stopped successfully");
     m_aiStarted = false;
     emit aiStopped();
 }
 
 void AIManager::onStopVoiceChatFailed(const QString& error)
 {
-    qDebug() << "AIManager: AI stop failed:" << error;
+    LOG_WARN(QString("AI stop failed: %1").arg(error));
 }

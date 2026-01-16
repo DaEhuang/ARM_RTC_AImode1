@@ -1,8 +1,11 @@
 ﻿#include "RoomMainWidget.h"
 #include "ConfigManager.h"
+#include "Logger.h"
 #include <QtWidgets/QApplication>
 #include <QScreen>
 #include <QDir>
+
+#define LOG_MODULE "Main"
 
 int main(int argc, char *argv[]) {
     qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1");
@@ -11,9 +14,14 @@ int main(int argc, char *argv[]) {
     a.setQuitOnLastWindowClosed(true);
     a.setWindowIcon(QIcon(":/QuickStart/app.ico"));
     
+    // 初始化日志系统
+    Logger::init();
+    LOG_INFO("Application starting...");
+    
     // 加载配置文件
     QString configPath = QDir(QCoreApplication::applicationDirPath()).filePath("../config/config.json");
     ConfigManager::instance()->loadFromFile(configPath);
+    LOG_INFO(QString("Config loaded from: %1").arg(configPath));
     
     RoomMainWidget w;
     // 全屏无边框，适配4.3寸横屏 (800x480)

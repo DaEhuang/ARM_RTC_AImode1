@@ -1,10 +1,13 @@
 #include "MediaManager.h"
 #include "ConfigManager.h"
+#include "Logger.h"
 #include "ExternalVideoSource.h"
 #include "ExternalAudioSource.h"
 #include "ExternalAudioRender.h"
 #include "rtc/bytertc_audio_device_manager.h"
 #include <QDebug>
+
+#define LOG_MODULE "MediaManager"
 
 MediaManager::MediaManager(QObject* parent)
     : QObject(parent)
@@ -21,7 +24,7 @@ void MediaManager::initialize(bytertc::IRTCEngine* engine)
     m_engine = engine;
     
     if (!m_engine) {
-        qWarning() << "MediaManager: Engine is null";
+        LOG_ERROR("Engine is null");
         return;
     }
     
@@ -35,11 +38,11 @@ void MediaManager::initialize(bytertc::IRTCEngine* engine)
     conf.width = config->videoWidth();
     conf.height = config->videoHeight();
     m_engine->setVideoEncoderConfig(conf);
-    qDebug() << "MediaManager: Video config:" << conf.width << "x" << conf.height << "@" << conf.frame_rate << "fps";
+    LOG_INFO(QString("Video config: %1x%2@%3fps").arg(conf.width).arg(conf.height).arg(conf.frame_rate));
     
     // 使用外部视频源
     m_engine->setVideoSourceType(bytertc::kVideoSourceTypeExternal);
-    qDebug() << "MediaManager: Set video source type to external";
+    LOG_DEBUG("Set video source type to external");
     
     // 创建视频源
     if (!m_videoSource) {
@@ -50,7 +53,7 @@ void MediaManager::initialize(bytertc::IRTCEngine* engine)
     
     // 尝试使用外部音频源
     int audioSourceRet = m_engine->setAudioSourceType(bytertc::kAudioSourceTypeExternal);
-    qDebug() << "MediaManager: setAudioSourceType(External) ret:" << audioSourceRet;
+    LOG_DEBUG(QString("setAudioSourceType(External) ret: %1").arg(audioSourceRet));
     
     if (audioSourceRet == 0) {
         // 外部音频源可用
@@ -59,7 +62,7 @@ void MediaManager::initialize(bytertc::IRTCEngine* engine)
         }
         m_audioSource->setRTCEngine(m_engine);
     } else {
-        qDebug() << "MediaManager: External audio source not available, using internal";
+        LOG_WARN("External audio source not available, using internal");
     }
     
     // 创建音频渲染
@@ -68,7 +71,7 @@ void MediaManager::initialize(bytertc::IRTCEngine* engine)
     }
     m_audioRender->setRTCEngine(m_engine);
     
-    qDebug() << "MediaManager: Initialized";
+    LOG_INFO("Initialized");
 }
 
 void MediaManager::startAll()
