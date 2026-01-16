@@ -1,0 +1,23 @@
+# Build directory
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.user
+
+# macOS
+.DS_Store
+
+# Temporary files
+*.log
+*.tmp
+*~
+
+# Compiled files
+*.o
+*.so
+*.a
+moc_*
+ui_*.h
+qrc_*.cpp
