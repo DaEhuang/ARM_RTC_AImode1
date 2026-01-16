@@ -4,13 +4,7 @@
 #include <QPushButton>
 #include <QButtonGroup>
 #include "ui_ModeWidget.h"
-
-enum class AIMode {
-    Chat = 0,      // 闲聊
-    Supervise,     // 监督
-    Teach,         // 教学
-    Standby        // 待机
-};
+#include "common/AIMode.h"
 
 class ModeWidget : public QWidget {
     Q_OBJECT

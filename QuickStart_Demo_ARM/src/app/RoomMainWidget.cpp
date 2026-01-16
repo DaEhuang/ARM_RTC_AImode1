@@ -80,18 +80,17 @@ RoomMainWidget::RoomMainWidget(QWidget *parent)
     setupView();
     setupSignals();
     
-    // 初始化 AIGC API
-    m_aigcApi = new AIGCApi(this);
-    connect(m_aigcApi, &AIGCApi::getScenesSuccess, this, &RoomMainWidget::slotOnGetScenesSuccess);
-    connect(m_aigcApi, &AIGCApi::getScenesFailed, this, &RoomMainWidget::slotOnGetScenesFailed);
-    connect(m_aigcApi, &AIGCApi::startVoiceChatSuccess, this, &RoomMainWidget::slotOnStartVoiceChatSuccess);
-    connect(m_aigcApi, &AIGCApi::startVoiceChatFailed, this, &RoomMainWidget::slotOnStartVoiceChatFailed);
-    connect(m_aigcApi, &AIGCApi::stopVoiceChatSuccess, this, &RoomMainWidget::slotOnStopVoiceChatSuccess);
-    connect(m_aigcApi, &AIGCApi::stopVoiceChatFailed, this, &RoomMainWidget::slotOnStopVoiceChatFailed);
+    // 初始化 AI 管理器
+    m_aiManager = new AIManager(this);
+    connect(m_aiManager, &AIManager::configLoaded, this, &RoomMainWidget::slotOnAIConfigLoaded);
+    connect(m_aiManager, &AIManager::configFailed, this, &RoomMainWidget::slotOnAIConfigFailed);
+    connect(m_aiManager, &AIManager::aiStarted, this, &RoomMainWidget::slotOnAIStarted);
+    connect(m_aiManager, &AIManager::aiFailed, this, &RoomMainWidget::slotOnAIFailed);
+    connect(m_aiManager, &AIManager::aiStopped, this, &RoomMainWidget::slotOnAIStopped);
     
     // 自动获取场景配置
     qDebug() << "正在从 AIGC Server 获取配置...";
-    m_aigcApi->getScenes();
+    m_aiManager->initialize("http://localhost:3001");
 }
 
 void RoomMainWidget::leaveRoom() {
@@ -207,8 +206,8 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
     // 设置对话组件的用户名
     if (m_conversationWidget) {
         m_conversationWidget->setUserName("我");
-        if (m_aigcApi && m_aigcApi->hasConfig()) {
-            m_conversationWidget->setAIName(m_aigcApi->getRtcConfig().sceneName);
+        if (m_aiManager && m_aiManager->hasConfig()) {
+            m_conversationWidget->setAIName(m_aiManager->getRtcConfig().sceneName);
         } else {
             m_conversationWidget->setAIName("AI");
         }
@@ -217,8 +216,8 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
     // 创建引擎 - 使用服务器配置的 AppId 或本地配置
     bytertc::EngineConfig config;
     std::string appId = Constants::APP_ID;
-    if (m_useServerConfig && m_aigcApi && m_aigcApi->hasConfig()) {
-        appId = m_aigcApi->getRtcConfig().appId.toStdString();
+    if (m_useServerConfig && m_aiManager && m_aiManager->hasConfig()) {
+        appId = m_aiManager->getRtcConfig().appId.toStdString();
         qDebug() << "Using Server AppId:" << appId.c_str();
     }
     config.app_id = appId.c_str();
@@ -303,8 +302,8 @@ void RoomMainWidget::slotOnEnterRoom(const QString &roomID, const QString &userI
     roomConfig.room_profile_type = bytertc::kRoomProfileTypeCommunication;
     // 加入房间 - 使用服务器配置的 Token 或本地生成
     std::string token;
-    if (m_useServerConfig && m_aigcApi && m_aigcApi->hasConfig()) {
-        token = m_aigcApi->getRtcConfig().token.toStdString();
+    if (m_useServerConfig && m_aiManager && m_aiManager->hasConfig()) {
+        token = m_aiManager->getRtcConfig().token.toStdString();
         qDebug() << "Using Server Token";
     } else {
         token = TokenGenerator::generate(Constants::APP_ID, Constants::APP_KEY, m_roomId, m_uid);
@@ -331,9 +330,8 @@ void RoomMainWidget::slotOnHangup() {
     toggleShowFloatWidget(false);
     
     // 如果 AI 已启动，先停止 AI
-    if (m_aiStarted && m_aigcApi) {
-        m_aigcApi->stopVoiceChat();
-        m_aiStarted = false;
+    if (m_aiManager && m_aiManager->isAIStarted()) {
+        m_aiManager->stopAI();
     }
     
     // 停止外部视频源
@@ -704,89 +702,24 @@ void RoomMainWidget::clearVideoView() {
     }
 }
 
-// ==================== AIGC 相关槽函数 ====================
-
-void RoomMainWidget::slotOnStartAI() {
-    if (!m_aigcApi || !m_aigcApi->hasConfig()) {
-        QMessageBox::warning(this, QStringLiteral(u"提示"), 
-            QStringLiteral(u"AIGC 配置未加载，请确保 Server 已启动"), 
-            QStringLiteral(u"确定"));
-        return;
-    }
-    
-    qDebug() << "Starting AI...";
-    
-    // 显示"AI 准备中"状态
-    if (m_conversationWidget) {
-        m_conversationWidget->setAIReady(false);
-    }
-    
-    // 先尝试停止可能存在的旧任务
-    m_aigcApi->stopVoiceChat();
-    
-    // 短暂延迟后启动新任务
-    QTimer::singleShot(500, this, [this]() {
-        m_aigcApi->startVoiceChat();
-    });
-}
-
-void RoomMainWidget::slotOnStopAI() {
-    if (!m_aigcApi) {
-        return;
-    }
-    
-    qDebug() << "Stopping AI...";
-    m_aigcApi->stopVoiceChat();
-}
+// ==================== AIManager 相关槽函数 ====================
 
 void RoomMainWidget::slotOnModeChanged(AIMode mode) {
-    QString modeName;
-    QString sceneId;
-    
-    switch (mode) {
-        case AIMode::Chat:
-            modeName = "闲聊";
-            sceneId = "Chat";
-            break;
-        case AIMode::Supervise:
-            modeName = "监督";
-            sceneId = "Custom";  // 暂时使用 Custom
-            break;
-        case AIMode::Teach:
-            modeName = "教学";
-            sceneId = "Custom";
-            break;
-        case AIMode::Standby:
-            modeName = "待机";
-            sceneId = "";  // 待机模式不启动 AI
-            break;
-    }
-    
-    qDebug() << "Mode changed to:" << modeName;
+    qDebug() << "Mode changed to:" << static_cast<int>(mode);
     
     // 清空聊天记录
     if (m_conversationWidget) {
         m_conversationWidget->clearMessages();
+        m_conversationWidget->setAIReady(false);
     }
     
-    // 如果当前 AI 已启动，先停止
-    if (m_aiStarted) {
-        slotOnStopAI();
-    }
-    
-    // 如果不是待机模式，启动对应的 AI
-    if (mode != AIMode::Standby && !sceneId.isEmpty()) {
-        // 设置场景 ID
-        m_aigcApi->setSceneId(sceneId);
-        
-        // 短暂延迟后启动 AI
-        QTimer::singleShot(800, this, [this]() {
-            slotOnStartAI();
-        });
+    // 委托给 AIManager 处理模式切换
+    if (m_aiManager) {
+        m_aiManager->setMode(mode);
     }
 }
 
-void RoomMainWidget::slotOnGetScenesSuccess(const AIGCApi::RTCConfig& config) {
+void RoomMainWidget::slotOnAIConfigLoaded(const AIGCApi::RTCConfig& config) {
     qDebug() << "AIGC 配置获取成功:";
     qDebug() << "  场景名称:" << config.sceneName;
     qDebug() << "  AppId:" << config.appId;
@@ -802,7 +735,7 @@ void RoomMainWidget::slotOnGetScenesSuccess(const AIGCApi::RTCConfig& config) {
     slotOnEnterRoom(config.roomId, config.userId);
 }
 
-void RoomMainWidget::slotOnGetScenesFailed(const QString& error) {
+void RoomMainWidget::slotOnAIConfigFailed(const QString& error) {
     qDebug() << "AIGC 配置获取失败:" << error;
     m_useServerConfig = false;
     
@@ -810,12 +743,10 @@ void RoomMainWidget::slotOnGetScenesFailed(const QString& error) {
     if (m_loginWidget) {
         m_loginWidget->setConfigError(error);
     }
-    
 }
 
-void RoomMainWidget::slotOnStartVoiceChatSuccess() {
+void RoomMainWidget::slotOnAIStarted() {
     qDebug() << "AI 启动成功！";
-    m_aiStarted = true;
     
     // 更新 AI 准备状态
     if (m_conversationWidget) {
@@ -823,9 +754,8 @@ void RoomMainWidget::slotOnStartVoiceChatSuccess() {
     }
 }
 
-void RoomMainWidget::slotOnStartVoiceChatFailed(const QString& error) {
+void RoomMainWidget::slotOnAIFailed(const QString& error) {
     qDebug() << "AI 启动失败:" << error;
-    m_aiStarted = false;
     
     // 切换回待机模式
     if (m_modeWidget) {
@@ -837,13 +767,8 @@ void RoomMainWidget::slotOnStartVoiceChatFailed(const QString& error) {
         QStringLiteral(u"确定"));
 }
 
-void RoomMainWidget::slotOnStopVoiceChatSuccess() {
+void RoomMainWidget::slotOnAIStopped() {
     qDebug() << "AI 已停止";
-    m_aiStarted = false;
-}
-
-void RoomMainWidget::slotOnStopVoiceChatFailed(const QString& error) {
-    qDebug() << "AI 停止失败:" << error;
 }
 
 // ==================== 摄像头切换槽函数 ====================

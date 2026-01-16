@@ -9,6 +9,7 @@
 #include "AIGCApi.h"
 #include "ExternalVideoSource.h"
 #include "ModeWidget.h"
+#include "AIManager.h"
 
 class LoginWidget;
 class OperateWidget;
@@ -62,15 +63,12 @@ public
 
     void slotOnHangup();
     
-    // AIGC 相关槽
-    void slotOnStartAI();
-    void slotOnStopAI();
-    void slotOnGetScenesSuccess(const AIGCApi::RTCConfig& config);
-    void slotOnGetScenesFailed(const QString& error);
-    void slotOnStartVoiceChatSuccess();
-    void slotOnStartVoiceChatFailed(const QString& error);
-    void slotOnStopVoiceChatSuccess();
-    void slotOnStopVoiceChatFailed(const QString& error);
+    // AIManager 相关槽
+    void slotOnAIConfigLoaded(const AIGCApi::RTCConfig& config);
+    void slotOnAIConfigFailed(const QString& error);
+    void slotOnAIStarted();
+    void slotOnAIFailed(const QString& error);
+    void slotOnAIStopped();
     
     // 摄像头切换槽
     void slotOnCameraChanged(const CameraInfo& camera);
@@ -138,8 +136,7 @@ private:
     ExternalAudioSource* m_externalAudioSource = nullptr;
     ExternalAudioRender* m_externalAudioRender = nullptr;
     
-    // AIGC API
-    AIGCApi* m_aigcApi = nullptr;
-    bool m_aiStarted = false;
+    // AI 管理器
+    AIManager* m_aiManager = nullptr;
     bool m_useServerConfig = false;  // 是否使用服务器配置
 };
