@@ -79,19 +79,19 @@ border-radius: 69px;
       <string notr="true">QPushButton
 {
 	background:transparent;
-	border-image: url(:/QuickStart/Resources/video.bmp);
+	border-image: url(:/QuickStart/images/video.bmp);
 }
 
 QPushButton:hover
 {
 	background:transparent;
-	border-image:url(:/QuickStart/Resources/video_hover.bmp);
+	border-image:url(:/QuickStart/images/video_hover.bmp);
 }
 
 QPushButton::checked
 {
 	background:transparent;
-	border-image:url(:/QuickStart/Resources/video_disable.bmp);
+	border-image:url(:/QuickStart/images/video_disable.bmp);
 }</string>
      </property>
      <property name="text">
@@ -133,19 +133,19 @@ QPushButton::checked
       <string notr="true">QPushButton
 {
 	background:transparent;
-	border-image: url(:/QuickStart/Resources/audio.bmp);
+	border-image: url(:/QuickStart/images/audio.bmp);
 }
 
 QPushButton:hover
 {
 	background:transparent;
-	border-image:url(:/QuickStart/Resources/audio_hover.bmp);
+	border-image:url(:/QuickStart/images/audio_hover.bmp);
 }
 
 QPushButton::checked
 {
 	background:transparent;
-	border-image:url(:/QuickStart/Resources/audio_disable.bmp);
+	border-image:url(:/QuickStart/images/audio_disable.bmp);
 }</string>
      </property>
      <property name="text">
@@ -187,19 +187,19 @@ QPushButton::checked
       <string notr="true">QPushButton
 {
 	background:transparent;
-	border-image: url(:/QuickStart/Resources/speaker.bmp);
+	border-image: url(:/QuickStart/images/speaker.bmp);
 }
 
 QPushButton:hover
 {
 	background:transparent;
-	border-image:url(:/QuickStart/Resources/speaker_hover.bmp);
+	border-image:url(:/QuickStart/images/speaker_hover.bmp);
 }
 
 QPushButton::checked
 {
 	background:transparent;
-	border-image:url(:/QuickStart/Resources/speaker_disable.bmp);
+	border-image:url(:/QuickStart/images/speaker_disable.bmp);
 }</string>
      </property>
      <property name="text">
@@ -262,13 +262,13 @@ QPushButton::checked
         <string notr="true">QPushButton
 {
 	background:transparent;
-	border-image:url(:/QuickStart/Resources/hangup.bmp);
+	border-image:url(:/QuickStart/images/hangup.bmp);
 }
 
 QPushButton:hover
 {
 	background:transparent;
-	border-image:url(:/QuickStart/Resources/hangup_hover.bmp);
+	border-image:url(:/QuickStart/images/hangup_hover.bmp);
 }</string>
        </property>
        <property name="text">
