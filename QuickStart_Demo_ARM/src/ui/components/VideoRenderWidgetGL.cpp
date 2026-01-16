@@ -238,6 +238,15 @@ void VideoRenderWidgetGL::createTextures(int width, int height) {
     qDebug() << "VideoRenderWidgetGL: Created textures for" << width << "x" << height;
 }
 
+void VideoRenderWidgetGL::clearFrame() {
+    QMutexLocker locker(&m_mutex);
+    m_frameReady = false;
+    m_yData.clear();
+    m_uData.clear();
+    m_vData.clear();
+    update();
+}
+
 void VideoRenderWidgetGL::deleteTextures() {
     if (m_textureY) {
         glDeleteTextures(1, &m_textureY);

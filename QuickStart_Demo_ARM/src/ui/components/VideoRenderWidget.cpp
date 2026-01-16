@@ -18,6 +18,13 @@ CustomVideoSink* VideoRenderWidget::getVideoSink() const {
     return m_videoSink;
 }
 
+void VideoRenderWidget::clearFrame() {
+    if (m_videoSink) {
+        m_videoSink->clearFrame();
+    }
+    update();
+}
+
 void VideoRenderWidget::paintEvent(QPaintEvent* event) {
     Q_UNUSED(event);
     

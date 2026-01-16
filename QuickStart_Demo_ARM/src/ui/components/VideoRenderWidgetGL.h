@@ -25,6 +25,9 @@ public:
     // 直接更新 I420 数据（避免 CPU 转换）
     void updateI420Frame(const uint8_t* yData, const uint8_t* uData, const uint8_t* vData,
                          int width, int height, int yStride, int uStride, int vStride);
+    
+    // 清除画面（显示黑屏）
+    void clearFrame();
 
 protected:
     void initializeGL() override;

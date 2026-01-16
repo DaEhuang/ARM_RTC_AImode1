@@ -539,14 +539,21 @@ void RoomMainWidget::setupSignals() {
     });
 
     connect(m_operateWidget.get(), &OperateWidget::sigMuteVideo, this, [this](bool bMute) {
-        bytertc::IRTCEngine* engine = m_roomManager ? m_roomManager->getEngine() : nullptr;
-        if (engine) {
+        if (m_mediaManager) {
             if (bMute) {
                 // 关闭视频采集
-                engine->stopVideoCapture();
+                m_mediaManager->stopVideoCapture();
+                // 清除画面显示黑屏
+                if (m_useGPURendering && m_videoBackgroundGL) {
+                    m_videoBackgroundGL->clearFrame();
+                } else if (m_videoBackground) {
+                    m_videoBackground->clearFrame();
+                }
+                qDebug() << "Video capture stopped, frame cleared";
             } else {
                 // 开启视频采集
-                engine->startVideoCapture();
+                m_mediaManager->startVideoCapture();
+                qDebug() << "Video capture started";
             }
             QTimer::singleShot(10, this, [=] {
                 if (m_useGPURendering && m_videoBackgroundGL) {

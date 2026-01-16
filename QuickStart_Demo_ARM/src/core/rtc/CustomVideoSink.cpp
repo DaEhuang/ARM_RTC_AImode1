@@ -164,6 +164,11 @@ QImage CustomVideoSink::getCurrentFrame() {
     return m_currentFrame;
 }
 
+void CustomVideoSink::clearFrame() {
+    QMutexLocker locker(&m_mutex);
+    m_currentFrame = QImage();
+}
+
 void CustomVideoSink::setRenderWidget(QWidget* widget) {
     m_renderWidget = widget;
 }

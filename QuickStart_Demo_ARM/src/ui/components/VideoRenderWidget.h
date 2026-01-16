@@ -19,6 +19,9 @@ public:
 
     void setVideoSink(CustomVideoSink* sink);
     CustomVideoSink* getVideoSink() const;
+    
+    // 清除画面（显示黑屏）
+    void clearFrame();
 
 protected:
     void paintEvent(QPaintEvent* event) override;

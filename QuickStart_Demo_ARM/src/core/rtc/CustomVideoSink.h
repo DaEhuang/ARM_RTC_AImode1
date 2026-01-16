@@ -30,6 +30,9 @@ public:
     // 获取当前帧用于显示 (CPU 模式)
     QImage getCurrentFrame();
     
+    // 清除当前帧
+    void clearFrame();
+    
     // 设置渲染目标 widget (CPU 模式)
     void setRenderWidget(QWidget* widget);
     
