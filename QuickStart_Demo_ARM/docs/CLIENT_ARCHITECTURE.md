@@ -313,12 +313,12 @@ cd QuickStart_Demo_ARM
 - [x] 任务 5: 创建 ConfigManager 配置管理器
 - [x] 任务 6: 创建 Logger 日志系统
 - [x] 任务 7: 创建 ErrorCode 和 AppError 统一错误处理
+- [x] 任务 8: 创建 StyleManager 样式管理器
 
 ### 7.2 待完成
 
 | 优先级 | 任务 | 说明 |
 |--------|------|------|
-| 中 | 样式分离 | 将 QSS 样式移至 `ui/styles/` |
 | 中 | 单元测试 | 在 `tests/` 添加 Manager 测试 |
 | 低 | Mock 实现 | 在 `drivers/impl/mock/` 添加模拟实现（接口已就绪） |
 | 低 | 跨平台支持 | 添加 Windows/macOS 驱动实现（接口已就绪） |
@@ -331,14 +331,175 @@ cd QuickStart_Demo_ARM
 | AIManager | - | ~150 行 | +150 行 |
 | RoomManager | - | ~115 行 | +115 行 |
 | MediaManager | - | ~280 行 | +280 行 |
+| ConfigManager | - | ~200 行 | +200 行 |
+| Logger | - | ~150 行 | +150 行 |
+| ErrorCode | - | ~170 行 | +170 行 |
+| StyleManager | - | ~70 行 | +70 行 |
 
-**总结**: 通过抽取 Manager 类，RoomMainWidget 代码量减少约 24%，职责更加清晰。
+**总结**: 通过抽取 Manager 类和基础设施，RoomMainWidget 代码量减少约 24%，职责更加清晰，同时增加了配置管理、日志、错误处理、样式管理等基础设施。
 
 ---
 
-## 8. 协作指南
+## 8. 开发规范（重要）
 
-### 8.1 模块负责人
+### 8.1 日志规范
+
+使用 `Logger` 类统一输出日志，**禁止直接使用 `qDebug()`**。
+
+```cpp
+// 在文件开头定义模块名
+#define LOG_MODULE "ModuleName"
+
+// 使用宏输出日志
+LOG_DEBUG("Debug message");                    // 调试信息
+LOG_INFO("Info message");                       // 一般信息
+LOG_WARN("Warning message");                    // 警告
+LOG_ERROR("Error message");                     // 错误
+
+// 带参数
+LOG_INFO(QString("Video config: %1x%2").arg(width).arg(height));
+```
+
+**日志级别**:
+- `Debug`: 调试信息，生产环境可关闭
+- `Info`: 重要状态变化（初始化、启动、停止）
+- `Warning`: 可恢复的问题
+- `Error`: 错误，需要处理
+
+**输出格式**:
+```
+[2026-01-16 22:12:22.525] [INFO ] [AIManager      ] AI started successfully
+```
+
+### 8.2 错误处理规范
+
+使用 `ErrorCode` 枚举和 `AppError` 类统一错误处理。
+
+```cpp
+// 错误码分段
+enum class ErrorCode {
+    // 通用错误 (0-99)
+    Success = 0,
+    Unknown = 1,
+    
+    // RTC 错误 (100-199)
+    RtcEngineCreateFailed = 100,
+    RtcEngineNotCreated = 101,
+    
+    // AI 错误 (200-299)
+    AiConfigNotLoaded = 200,
+    AiStartFailed = 201,
+    
+    // 媒体错误 (300-399)
+    MediaEngineNull = 300,
+    
+    // 配置错误 (400-499)
+    ConfigFileNotFound = 400,
+};
+
+// 使用示例
+if (!m_engine) {
+    LOG_ERROR("Engine not created");
+    emit errorOccurred(makeError(ErrorCode::RtcEngineNotCreated));
+    return false;
+}
+
+// 信号定义
+signals:
+    void errorOccurred(const AppError& error);  // 不是 QString
+```
+
+**添加新错误码**:
+1. 在 `src/common/ErrorCode.h` 中添加枚举值
+2. 在 `getDefaultMessage()` 中添加默认消息
+
+### 8.3 配置管理规范
+
+使用 `ConfigManager` 统一管理配置，**禁止硬编码配置项**。
+
+```cpp
+// 获取配置
+QString appId = ConfigManager::instance()->appId();
+QString serverUrl = ConfigManager::instance()->serverUrl();
+int videoWidth = ConfigManager::instance()->videoWidth();
+
+// 配置文件: config/config.json
+{
+    "rtc": {
+        "appId": "xxx",
+        "appKey": "xxx",
+        "serverUrl": "http://localhost:3001"
+    },
+    "media": {
+        "preferredAudioDevice": "USB",
+        "video": { "width": 640, "height": 480, "frameRate": 15 }
+    },
+    "ui": {
+        "useGPURendering": true
+    }
+}
+```
+
+**添加新配置项**:
+1. 在 `ConfigManager.h` 中添加成员变量和 getter
+2. 在 `loadFromFile()` 中解析 JSON
+3. 在 `loadDefaults()` 中设置默认值
+4. 更新 `config/config.json` 模板
+
+### 8.4 样式规范
+
+使用 `StyleManager` 管理样式，新组件应使用 QSS 文件。
+
+```cpp
+// 应用全局样式
+StyleManager::instance()->applyToWidget(this);
+
+// 使用 objectName 选择器
+m_slider->setObjectName("micVolumeSlider");
+
+// 在 dark.qss 中定义样式
+QSlider#micVolumeSlider::handle:horizontal {
+    background: #4CAF50;
+}
+```
+
+**样式文件位置**: `src/ui/styles/dark.qss`
+
+**颜色常量**:
+- 主色 (Primary): `#4CAF50` 绿色
+- 次色 (Secondary): `#2196F3` 蓝色
+- 强调色 (Accent): `#635BFF` 紫色
+- 背景色: `rgba(0, 0, 0, 0.7)`
+- 文字色: `#FFFFFF`
+
+### 8.5 代码风格
+
+- **命名**: 类名 `PascalCase`，成员变量 `m_camelCase`，函数 `camelCase`
+- **缩进**: 4 空格
+- **头文件**: 使用 `#pragma once`
+- **注释**: 中文注释，关键逻辑需要说明
+
+### 8.6 Git 提交规范
+
+```
+<type>: <subject>
+
+<body>
+```
+
+**Type**:
+- `feat`: 新功能
+- `fix`: 修复 bug
+- `refactor`: 重构
+- `docs`: 文档
+- `style`: 代码格式
+- `test`: 测试
+
+---
+
+## 9. 协作指南
+
+### 9.1 模块负责人
 
 | 模块 | 负责人 | 说明 |
 |------|--------|------|
@@ -350,7 +511,7 @@ cd QuickStart_Demo_ARM
 | core/media/ | - | 媒体管理 |
 | drivers/ | - | 硬件驱动 |
 
-### 8.2 开发流程
+### 9.2 开发流程
 
 1. 从 `dev` 分支创建功能分支
 2. 开发并测试
@@ -359,7 +520,7 @@ cd QuickStart_Demo_ARM
 5. 合并到 `dev`
 6. 定期合并 `dev` 到 `master`
 
-### 8.3 联调测试
+### 9.3 联调测试
 
 1. 启动 Server: `cd Server && npm start`
 2. 启动客户端: `./scripts/run.sh`
@@ -369,7 +530,7 @@ cd QuickStart_Demo_ARM
 
 ---
 
-## 9. 常见问题
+## 10. 常见问题
 
 ### Q1: 摄像头无法启动
 检查 GStreamer 是否正确安装，运行 `gst-launch-1.0 libcamerasrc ! fakesink` 测试。
@@ -385,5 +546,6 @@ cd QuickStart_Demo_ARM
 
 ---
 
-*文档版本: 1.0*
+*文档版本: 2.0*
 *更新日期: 2026-01-16*
+*工程化重构完成: 任务 1-8*

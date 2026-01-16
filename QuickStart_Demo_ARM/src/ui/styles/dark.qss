@@ -1,0 +1,195 @@
+/* ==================== 深色主题样式 ==================== */
+
+/* ==================== 全局样式 ==================== */
+QWidget {
+    font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    font-size: 14px;
+    color: #FFFFFF;
+}
+
+/* ==================== 滑块样式 ==================== */
+QSlider::groove:horizontal {
+    background: #555;
+    height: 4px;
+    border-radius: 2px;
+}
+
+QSlider::handle:horizontal {
+    width: 10px;
+    margin: -3px 0;
+    border-radius: 5px;
+}
+
+QSlider::sub-page:horizontal {
+    border-radius: 2px;
+}
+
+/* 麦克风滑块 - 绿色 */
+QSlider#micVolumeSlider::handle:horizontal {
+    background: #4CAF50;
+}
+
+QSlider#micVolumeSlider::sub-page:horizontal {
+    background: #4CAF50;
+}
+
+/* 扬声器滑块 - 蓝色 */
+QSlider#speakerVolumeSlider::handle:horizontal {
+    background: #2196F3;
+}
+
+QSlider#speakerVolumeSlider::sub-page:horizontal {
+    background: #2196F3;
+}
+
+/* ==================== 下拉框样式 ==================== */
+QComboBox {
+    background: #3d3d3d;
+    color: white;
+    border: 2px solid #555;
+    border-radius: 25px;
+    padding: 5px 10px;
+    min-width: 40px;
+}
+
+QComboBox:hover {
+    border-color: #4CAF50;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 0px;
+}
+
+QComboBox QAbstractItemView {
+    background: #2d2d2d;
+    color: white;
+    selection-background-color: #4CAF50;
+    border: 1px solid #555;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+/* ==================== 滚动区域样式 ==================== */
+QScrollArea {
+    background: transparent;
+    border: none;
+}
+
+QScrollArea > QWidget > QWidget {
+    background: transparent;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+/* ==================== 按钮样式 ==================== */
+QPushButton {
+    background-color: transparent;
+    border: none;
+    padding: 5px;
+}
+
+QPushButton:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+QPushButton:pressed {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 关闭按钮 */
+QPushButton#closeBtn {
+    background-color: rgba(255, 0, 0, 0.6);
+    border-radius: 15px;
+}
+
+QPushButton#closeBtn:hover {
+    background-color: rgba(255, 0, 0, 0.8);
+}
+
+/* ==================== 标签样式 ==================== */
+QLabel {
+    color: #FFFFFF;
+    background: transparent;
+}
+
+QLabel#statusLabel {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* ==================== 消息样式 ==================== */
+/* 用户名标签 */
+QLabel#messageNameLabel {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* 用户消息 */
+QLabel#userMessageLabel {
+    color: #FFFFFF;
+    font-size: 14px;
+    background-color: rgba(80, 80, 80, 0.6);
+    border-radius: 12px;
+    padding: 8px 12px;
+}
+
+/* AI 消息 */
+QLabel#aiMessageLabel {
+    color: #FFFFFF;
+    font-size: 14px;
+    background-color: rgba(99, 91, 255, 0.3);
+    border-radius: 12px;
+    padding: 8px 12px;
+}
+
+/* 打断标签 */
+QLabel#interruptLabel {
+    color: #635BFF;
+    font-size: 11px;
+    font-style: italic;
+}
+
+/* ==================== 模式按钮样式 ==================== */
+QPushButton#modeButton {
+    background-color: rgba(60, 60, 60, 0.8);
+    color: rgba(255, 255, 255, 0.7);
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+QPushButton#modeButton:hover {
+    background-color: rgba(80, 80, 80, 0.9);
+    color: #FFFFFF;
+}
+
+QPushButton#modeButton:checked {
+    background-color: rgba(99, 91, 255, 0.8);
+    color: #FFFFFF;
+    border-color: #635BFF;
+}

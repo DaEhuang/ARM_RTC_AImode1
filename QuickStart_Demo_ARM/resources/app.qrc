@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/QuickStart">
+        <file>../src/ui/styles/dark.qss</file>
         <file>images/audio.bmp</file>
         <file>images/audio_disable.bmp</file>
         <file>images/audio_hover.bmp</file>

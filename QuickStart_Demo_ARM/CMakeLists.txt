@@ -65,6 +65,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/src/app)
 include_directories(${CMAKE_SOURCE_DIR}/src/ui/widgets)
 include_directories(${CMAKE_SOURCE_DIR}/src/ui/components)
+include_directories(${CMAKE_SOURCE_DIR}/src/ui/styles)
 include_directories(${CMAKE_SOURCE_DIR}/src/core/api)
 include_directories(${CMAKE_SOURCE_DIR}/src/core/rtc)
 include_directories(${CMAKE_SOURCE_DIR}/src/core/media)
@@ -90,6 +91,7 @@ qt5_add_resources(MainWindow_QRC_FILES resources/app.qrc)
 FILE(GLOB_RECURSE SRC_APP "src/app/*.h" "src/app/*.cpp")
 FILE(GLOB_RECURSE SRC_UI_WIDGETS "src/ui/widgets/*.h" "src/ui/widgets/*.cpp")
 FILE(GLOB_RECURSE SRC_UI_COMPONENTS "src/ui/components/*.h" "src/ui/components/*.cpp")
+FILE(GLOB_RECURSE SRC_UI_STYLES "src/ui/styles/*.h" "src/ui/styles/*.cpp")
 FILE(GLOB_RECURSE SRC_CORE_API "src/core/api/*.h" "src/core/api/*.cpp")
 FILE(GLOB_RECURSE SRC_CORE_RTC "src/core/rtc/*.h" "src/core/rtc/*.cpp")
 FILE(GLOB_RECURSE SRC_CORE_MEDIA "src/core/media/*.h" "src/core/media/*.cpp")
@@ -102,6 +104,7 @@ FILE(GLOB SRC_MAIN "src/main.cpp")
 source_group(app FILES ${SRC_APP})
 source_group(ui/widgets FILES ${SRC_UI_WIDGETS})
 source_group(ui/components FILES ${SRC_UI_COMPONENTS})
+source_group(ui/styles FILES ${SRC_UI_STYLES})
 source_group(core/api FILES ${SRC_CORE_API})
 source_group(core/rtc FILES ${SRC_CORE_RTC})
 source_group(core/media FILES ${SRC_CORE_MEDIA})
@@ -115,6 +118,7 @@ list(APPEND ALL_SOURCES_AND_HEADERS
     ${SRC_APP}
     ${SRC_UI_WIDGETS}
     ${SRC_UI_COMPONENTS}
+    ${SRC_UI_STYLES}
     ${SRC_CORE_API}
     ${SRC_CORE_RTC}
     ${SRC_CORE_MEDIA}

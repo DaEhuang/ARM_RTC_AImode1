@@ -1,6 +1,7 @@
 ﻿#include "RoomMainWidget.h"
 #include "ConfigManager.h"
 #include "Logger.h"
+#include "StyleManager.h"
 #include <QtWidgets/QApplication>
 #include <QScreen>
 #include <QDir>
@@ -22,6 +23,10 @@ int main(int argc, char *argv[]) {
     QString configPath = QDir(QCoreApplication::applicationDirPath()).filePath("../config/config.json");
     ConfigManager::instance()->loadFromFile(configPath);
     LOG_INFO(QString("Config loaded from: %1").arg(configPath));
+    
+    // 加载样式主题
+    StyleManager::instance()->loadTheme(":/QuickStart/../src/ui/styles/dark.qss");
+    LOG_INFO("Theme loaded");
     
     RoomMainWidget w;
     // 全屏无边框，适配4.3寸横屏 (800x480)
