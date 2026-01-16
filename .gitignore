@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-node_modules/
+/node_modules
 /.pnp
 .pnp.js
 .vscode
@@ -23,6 +23,8 @@ yarn-debug.log*
 yarn-error.log*
 .eslintcache
 
+/Server/node_modules
+/Server/scenes/Custom.json
 /Server/log
 /log
 yarn.lock
@@ -30,6 +32,3 @@ yarn.lock
 pnpm-lock.yaml
 dist/
 log/
-
-# ARM build artifacts
-QuickStart_Demo_ARM/build/

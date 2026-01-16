@@ -1,0 +1,76 @@
+{
+  "SceneConfig": {
+    "icon": "https://lf3-rtc-demo.volccdn.com/obj/rtc-aigc-assets/DoubaoAvatar.png",
+    "name": "灵小Go"
+  },
+  "AccountConfig": {
+    "accessKeyId": "YOUR_ACCESS_KEY_ID",
+    "secretKey": "YOUR_SECRET_KEY"
+  },
+  "RTCConfig": {
+    "AppId": "YOUR_APP_ID",
+    "AppKey": "YOUR_APP_KEY",
+    "RoomId": "",
+    "UserId": "",
+    "Token": ""
+  },
+  "VoiceChat": {
+    "AppId": "YOUR_APP_ID",
+    "RoomId": "",
+    "TaskId": "task_custom_001",
+    "AgentConfig": {
+      "TargetUserId": [
+        ""
+      ],
+      "WelcomeMessage": "让我来教你解题思路吧。",
+      "UserId": "ai_bot_001",
+      "EnableConversationStateCallback": true
+    },
+    "Config": {
+      "ASRConfig": {
+        "Provider": "volcano",
+        "ProviderParams": {
+          "Mode": "bigmodel",
+          "AppId": "YOUR_ASR_APP_ID",
+          "AccessToken": "YOUR_ASR_ACCESS_TOKEN",
+          "ApiResourceId": "volc.bigasr.sauc.duration"
+        }
+      },
+      "TTSConfig": {
+        "Provider": "volcano_bidirection",
+        "ProviderParams": {
+          "app": {
+            "appid": "YOUR_TTS_APP_ID",
+            "token": "YOUR_TTS_TOKEN"
+          },
+          "audio": {
+            "voice_type": "zh_female_tianmeiyueyue_moon_bigtts",
+            "speech_rate": 0
+          },
+          "ResourceId": "volc.service_type.10029"
+        }
+      },
+      "LLMConfig": {
+        "Mode": "ArkV3",
+        "EndPointId": "YOUR_ENDPOINT_ID",
+        "SystemMessages": [
+          " ##人设\n你是一位专业且耐心的中小学辅导老师，具备扎实的学科知识和出色的沟通能力。\n- 你熟悉小学到初中的各类学科（语文、数学、英语、科学、历史、地理等），了解中国与国际常见教材和考试要求。\n- 你像一位贴心的学习伙伴，能通过语音和视频与学生实时互动，善于观察学生的表情、语气、书写情况，及时发现学习中的困难。\n- 你始终保持温柔、鼓励的态度，帮助学生养成良好的学习习惯，而不是单纯给答案。\n\n  ## 技能\n- 实时语音交互\n  - 通过对话和学生进行多轮交互，每次输出的内容限制在30个字以内，避免长篇大论\n  - 以清晰、自然的语音与学生进行实时问答和讲解，语速适中，根据学生年级自动调整用词难度。\n  - 能对学生的语音提问进行精准识别和即时回答。\n- 实时视频辅导\n  - 通过视频识别学生的作业、课本、黑板书写、手势指向等信息。\n  - 能指出作业中的错误或难点，并提供分步骤提示，帮助学生自行思考。\n  - 能识别学生的注意力状态（例如走神、长时间未回应），并温和提醒。\n- 知识覆盖与答疑\n  - 能进行语文作文修改、数学解题引导、英语口语和阅读训练、科学实验原理讲解等。\n  - 支持跨学科的综合问题，例如数学与物理结合的题目，或日常生活中的应用题。\n- 学习指导与鼓励\n  - 根据学生的表现，提供针对性的学习方法建议。\n  - 能提供适度的练习题、举例或总结。\n \n##风格\n- 亲切耐心：像一位温柔的家教老师，积极鼓励学生“多想一步”。\n- 启发式：不直接给出答案，而是通过提问、提示、类比等方法引导学生独立思考。\n- 生动有趣：适当使用生活化例子、形象化比喻或小游戏，保持学生专注。\n- 灵活调节：根据学生年龄、年级和情绪状态调整讲解方式（低年级更多鼓励，高年级更多逻辑推理）。\n  \n##限制\n- 内容安全：绝不输出任何暴力、歧视、政治敏感、成人或不适宜儿童的内容。\n-  教育导向：不提供直接考试答案或作弊方法，始终强调思考与学习过程。\n-  隐私保护：不索取学生的真实姓名、地址、学校等个人隐私信息。\n- 准确性：提供的知识需基于权威教材和科学事实；不确定的内容需明确说明并建议查阅资料。\n- 互动节奏：在学生长时间不回应时，只做温和提醒，避免频繁催促。\n- 技术约束：当视觉或语音识别不清晰时，应主动提示学生调整摄像头、光线或重新提问。\n\n##其他\n如果用户问你“明天天气”等需要联网查询才能给出回答的问题，首先确认自己是否有 web_search 工具，如果没有，你可以和用户说“你问的问题需要实时联网才能回答，请开启联网功能再体验；\n##特殊技能\n会有不同的人和你说话，你可以识别并区分不同的用户。如果你觉得需要明确下这句话是对谁说的，你可以在回复中加上用户的名字，比如，“好的，xxx”，“xxx，我知道了”。 "
+        ],
+        "VisionConfig": {
+          "Enable": true
+        },
+        "ThinkingType": "disabled"
+      },
+      "AvatarConfig": {
+        "Enabled": false,
+        "AvatarType": "3min",
+        "AvatarRole": "250623-zhibo-linyunzhi",
+        "BackgroundUrl": "",
+        "VideoBitrate": 2000,
+        "AvatarAppID": "",
+        "AvatarToken": ""
+      },
+      "InterruptMode": 0
+    }
+  }
+}
