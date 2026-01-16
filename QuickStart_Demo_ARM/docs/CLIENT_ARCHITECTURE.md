@@ -312,12 +312,12 @@ cd QuickStart_Demo_ARM
 - [x] 任务 4: Linux 实现类继承接口 (ExternalVideoSource/AudioSource/AudioRender)
 - [x] 任务 5: 创建 ConfigManager 配置管理器
 - [x] 任务 6: 创建 Logger 日志系统
+- [x] 任务 7: 创建 ErrorCode 和 AppError 统一错误处理
 
 ### 7.2 待完成
 
 | 优先级 | 任务 | 说明 |
 |--------|------|------|
-| 中 | 错误处理 | 定义错误码枚举，统一错误处理机制 |
 | 中 | 样式分离 | 将 QSS 样式移至 `ui/styles/` |
 | 中 | 单元测试 | 在 `tests/` 添加 Manager 测试 |
 | 低 | Mock 实现 | 在 `drivers/impl/mock/` 添加模拟实现（接口已就绪） |

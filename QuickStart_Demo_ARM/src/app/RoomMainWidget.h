@@ -67,9 +67,9 @@ public
     
     // AIManager 相关槽
     void slotOnAIConfigLoaded(const AIGCApi::RTCConfig& config);
-    void slotOnAIConfigFailed(const QString& error);
+    void slotOnAIConfigFailed(const AppError& error);
     void slotOnAIStarted();
-    void slotOnAIFailed(const QString& error);
+    void slotOnAIFailed(const AppError& error);
     void slotOnAIStopped();
     
     // 摄像头切换槽

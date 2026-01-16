@@ -4,6 +4,7 @@
 #include <QString>
 #include "AIGCApi.h"
 #include "common/AIMode.h"
+#include "common/ErrorCode.h"
 
 /**
  * AI 管理器
@@ -38,11 +39,11 @@ public:
 signals:
     // 配置获取
     void configLoaded(const AIGCApi::RTCConfig& config);
-    void configFailed(const QString& error);
+    void configFailed(const AppError& error);
     
     // AI 状态
     void aiStarted();
-    void aiFailed(const QString& error);
+    void aiFailed(const AppError& error);
     void aiStopped();
     
     // 模式变化

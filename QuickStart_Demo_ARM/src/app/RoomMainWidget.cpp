@@ -615,13 +615,13 @@ void RoomMainWidget::slotOnAIConfigLoaded(const AIGCApi::RTCConfig& config) {
     slotOnEnterRoom(config.roomId, config.userId);
 }
 
-void RoomMainWidget::slotOnAIConfigFailed(const QString& error) {
-    qDebug() << "AIGC 配置获取失败:" << error;
+void RoomMainWidget::slotOnAIConfigFailed(const AppError& error) {
+    qDebug() << "AIGC 配置获取失败:" << error.toString();
     m_useServerConfig = false;
     
     // 通知 LoginWidget 切换到手动模式
     if (m_loginWidget) {
-        m_loginWidget->setConfigError(error);
+        m_loginWidget->setConfigError(error.message());
     }
 }
 
@@ -634,8 +634,8 @@ void RoomMainWidget::slotOnAIStarted() {
     }
 }
 
-void RoomMainWidget::slotOnAIFailed(const QString& error) {
-    qDebug() << "AI 启动失败:" << error;
+void RoomMainWidget::slotOnAIFailed(const AppError& error) {
+    qDebug() << "AI 启动失败:" << error.toString();
     
     // 切换回待机模式
     if (m_modeWidget) {
@@ -643,7 +643,7 @@ void RoomMainWidget::slotOnAIFailed(const QString& error) {
     }
     
     QMessageBox::warning(this, QStringLiteral(u"AI 启动失败"), 
-        error, 
+        error.message(), 
         QStringLiteral(u"确定"));
 }
 

@@ -1,5 +1,6 @@
 #include "RoomManager.h"
 #include "Logger.h"
+#include "ErrorCode.h"
 #include <QDebug>
 
 #define LOG_MODULE "RoomManager"
@@ -23,6 +24,7 @@ bool RoomManager::createEngine(const QString& appId, bytertc::IRTCEngineEventHan
 {
     if (m_engine) {
         LOG_WARN("Engine already exists");
+        emit errorOccurred(makeError(ErrorCode::RtcEngineAlreadyExists));
         return false;
     }
     
@@ -34,7 +36,7 @@ bool RoomManager::createEngine(const QString& appId, bytertc::IRTCEngineEventHan
     m_engine = bytertc::IRTCEngine::createRTCEngine(config, engineHandler);
     if (!m_engine) {
         LOG_ERROR("Failed to create engine");
-        emit error("Failed to create RTC engine");
+        emit errorOccurred(makeError(ErrorCode::RtcEngineCreateFailed));
         return false;
     }
     
@@ -62,7 +64,7 @@ bool RoomManager::joinRoom(const QString& roomId, const QString& userId, const Q
 {
     if (!m_engine) {
         LOG_ERROR("Engine not created");
-        emit error("Engine not created");
+        emit errorOccurred(makeError(ErrorCode::RtcEngineNotCreated));
         return false;
     }
     
@@ -81,7 +83,7 @@ bool RoomManager::joinRoom(const QString& roomId, const QString& userId, const Q
     m_room = m_engine->createRTCRoom(roomIdStr.c_str());
     if (!m_room) {
         LOG_ERROR("Failed to create room");
-        emit error("Failed to create RTC room");
+        emit errorOccurred(makeError(ErrorCode::RtcRoomCreateFailed));
         return false;
     }
     

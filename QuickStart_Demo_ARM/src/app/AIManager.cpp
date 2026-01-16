@@ -1,5 +1,6 @@
 #include "AIManager.h"
 #include "Logger.h"
+#include "ErrorCode.h"
 #include <QDebug>
 #include <QTimer>
 
@@ -73,7 +74,7 @@ void AIManager::setMode(AIMode mode)
 void AIManager::startAI()
 {
     if (!m_aigcApi || !m_aigcApi->hasConfig()) {
-        emit aiFailed(QStringLiteral("AIGC 配置未加载"));
+        emit aiFailed(makeError(ErrorCode::AiConfigNotLoaded));
         return;
     }
     
@@ -135,7 +136,7 @@ void AIManager::onGetScenesSuccess(const AIGCApi::RTCConfig& config)
 void AIManager::onGetScenesFailed(const QString& error)
 {
     LOG_ERROR(QString("Config failed: %1").arg(error));
-    emit configFailed(error);
+    emit configFailed(makeError(ErrorCode::AiServerError, error));
 }
 
 void AIManager::onStartVoiceChatSuccess()
@@ -149,7 +150,7 @@ void AIManager::onStartVoiceChatFailed(const QString& error)
 {
     LOG_ERROR(QString("AI start failed: %1").arg(error));
     m_aiStarted = false;
-    emit aiFailed(error);
+    emit aiFailed(makeError(ErrorCode::AiStartFailed, error));
 }
 
 void AIManager::onStopVoiceChatSuccess()

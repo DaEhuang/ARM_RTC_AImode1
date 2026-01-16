@@ -4,6 +4,7 @@
 #include <QString>
 #include "bytertc_engine.h"
 #include "bytertc_room.h"
+#include "ErrorCode.h"
 
 /**
  * RTC 房间管理器
@@ -39,7 +40,7 @@ signals:
     void engineDestroyed();
     void roomJoined(const QString& roomId, const QString& userId);
     void roomLeft();
-    void error(const QString& message);
+    void errorOccurred(const AppError& error);
 
 private:
     bytertc::IRTCEngine* m_engine = nullptr;
