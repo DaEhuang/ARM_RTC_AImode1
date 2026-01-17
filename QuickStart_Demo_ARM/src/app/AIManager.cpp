@@ -116,11 +116,11 @@ QString AIManager::getSceneIdForMode(AIMode mode) const
 {
     switch (mode) {
         case AIMode::Chat:
-            return "Chat";
+            return "chat";
         case AIMode::Supervise:
-            return "Custom";  // 暂时使用 Custom
+            return "teach";  // 暂时使用 teach
         case AIMode::Teach:
-            return "Custom";
+            return "teach";
         case AIMode::Standby:
         default:
             return "";

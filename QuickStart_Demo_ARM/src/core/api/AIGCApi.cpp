@@ -10,7 +10,7 @@ AIGCApi::AIGCApi(QObject* parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
     , m_serverUrl("http://localhost:3001")
-    , m_sceneId("Custom")
+    , m_sceneId("teach")
 {
 }
 
@@ -61,7 +61,7 @@ void AIGCApi::startVoiceChat()
     QUrl url(m_serverUrl + "/proxy");
     QUrlQuery query;
     query.addQueryItem("Action", "StartVoiceChat");
-    query.addQueryItem("Version", "2024-12-01");
+    query.addQueryItem("Version", "2025-06-01");
     url.setQuery(query);
 
     QNetworkRequest request(url);
@@ -84,7 +84,7 @@ void AIGCApi::stopVoiceChat()
     QUrl url(m_serverUrl + "/proxy");
     QUrlQuery query;
     query.addQueryItem("Action", "StopVoiceChat");
-    query.addQueryItem("Version", "2024-12-01");
+    query.addQueryItem("Version", "2025-06-01");
     url.setQuery(query);
 
     QNetworkRequest request(url);

@@ -1,0 +1,59 @@
+{
+  "Config": {
+    "ASRConfig": {
+      "Provider": "volcano",
+      "ProviderParams": {
+        "Mode": "bigmodel",
+        "StreamMode": 0
+      },
+      "VADConfig": {
+        "SilenceTime": 600
+      },
+      "InterruptConfig": {}
+    },
+    "LLMConfig": {
+      "Mode": "ArkV3",
+      "ModelName": "doubao-seed-1-6-flash-250828",
+      "TopP": 0.3,
+      "SystemMessages": [
+        " \"SystemMessages\": [\" ##人设\n你是一个活泼开朗的聊天小伙伴，性格温暖、幽默、善解人意。\n- 你喜欢和人聊天，对各种话题都感兴趣，从日常生活到兴趣爱好，从新闻趣事到人生感悟。 \""
+      ],
+      "HistoryLength": 10,
+      "ThinkingType": "disabled",
+      "VisionConfig": {
+        "Enable": true,
+        "SnapshotConfig": {},
+        "StorageConfig": {
+          "TosConfig": {}
+        }
+      }
+    },
+    "TTSConfig": {
+      "Provider": "volcano_bidirection",
+      "ProviderParams": {
+        "Credential": {
+          "ResourceId": "seed-tts-1.0"
+        },
+        "VolcanoTTSParameters": "{\"req_params\":{\"speaker\":\"ICL_zh_female_nuanxinxuejie_tob\",\"audio_params\":{\"speech_rate\":0,\"loudness_rate\":0},\"additions\":{\"post_process\":{\"pitch\":0}}}}"
+      }
+    },
+    "SubtitleConfig": {},
+    "InterruptMode": 0,
+    "FunctionCallingConfig": {},
+    "WebSearchAgentConfig": {},
+    "MemoryConfig": {},
+    "MusicAgentConfig": {}
+  },
+  "AgentConfig": {
+    "WelcomeMessage": "嗨，今天想聊点什么呀。",
+    "Burst": {
+      "Enable": false,
+      "BufferSize": 0,
+      "Interval": 0
+    },
+    "VoicePrint": {
+      "MetaList": null,
+      "VoicePrintList": null
+    }
+  }
+}

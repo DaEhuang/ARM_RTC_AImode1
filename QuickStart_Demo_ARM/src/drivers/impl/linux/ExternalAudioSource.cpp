@@ -56,7 +56,7 @@ void ExternalAudioSource::run() {
     // 格式: 16000Hz, 单声道, 16-bit signed little-endian
     QProcess process;
     QStringList args;
-    args << "-D" << "hw:2,0"      // USB 麦克风设备
+    args << "-D" << "hw:1,0"      // USB 麦克风设备 (Yundea M1066)
          << "-f" << "S16_LE"      // 16-bit signed little-endian
          << "-r" << "16000"       // 16000 Hz 采样率
          << "-c" << "1"           // 单声道

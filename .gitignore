@@ -9,8 +9,7 @@
 
 # Server
 /Server/node_modules
-/Server/scenes/Custom.json
-/Server/scenes/Chat.json
+/Server/credentials.json
 /Server/log
 
 # Qt/C++ build

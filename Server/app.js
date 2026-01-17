@@ -13,7 +13,21 @@ const { wrapper, assert, readFiles } = require('./util');
 const TokenManager = require('./token');
 const Privileges = require('./token').privileges;
 
-const Scenes = readFiles('./scenes', '.json');
+// 加载场景配置（系统导出格式）
+const SceneConfigs = readFiles('./scenes', '.json');
+
+// 加载凭证配置
+let Credentials = {};
+try {
+  Credentials = require('./credentials.json');
+} catch (e) {
+  console.error('警告: credentials.json 不存在，请创建该文件');
+}
+
+const { AccountConfig = {}, RTCConfig: GlobalRTCConfig = {}, Scenes: SceneMeta = {} } = Credentials;
+
+// 运行时状态：存储每个场景的 RoomId、UserId 等
+const RuntimeState = {};
 
 const app = new Koa();
 
@@ -32,7 +46,7 @@ app.use(async ctx => {
     apiName: 'proxy',
     containResponseMetadata: false,
     logic: async () => {
-      const { Action, Version = '2024-12-01' } = ctx.query || {};
+      const { Action, Version = '2025-06-01' } = ctx.query || {};
       assert(Action, 'Action 不能为空');
       assert(Version, 'Version 不能为空');
 
@@ -40,51 +54,62 @@ app.use(async ctx => {
 
       assert(SceneID, 'SceneID 不能为空, SceneID 用于指定场景的 JSON');
 
-      const JSONData = Scenes[SceneID];
-      assert(JSONData, `${SceneID} 不存在, 请先在 Server/scenes 下定义该场景的 JSON.`);
+      const sceneConfig = SceneConfigs[SceneID];
+      assert(sceneConfig, `${SceneID} 不存在, 请先在 Server/scenes 下定义该场景的 JSON.`);
 
-      const { VoiceChat = {}, AccountConfig = {} } = JSONData;
-      assert(AccountConfig.accessKeyId, 'AccountConfig.accessKeyId 不能为空');
-      assert(AccountConfig.secretKey, 'AccountConfig.secretKey 不能为空');
+      assert(AccountConfig.accessKeyId, 'credentials.json 中 AccountConfig.accessKeyId 不能为空');
+      assert(AccountConfig.secretKey, 'credentials.json 中 AccountConfig.secretKey 不能为空');
+      assert(GlobalRTCConfig.AppId, 'credentials.json 中 RTCConfig.AppId 不能为空');
+
+      const sceneMeta = SceneMeta[SceneID] || {};
+      const state = RuntimeState[SceneID] || {};
 
       let body = {};
       switch(Action) {
         case 'StartVoiceChat':
-          // 优先使用客户端传入的 RoomId 和 UserId（用于模式切换场景）
-          // 如果没有传入，则使用 RTCConfig 中的值（由 getScenes 生成）
-          const { RTCConfig: rtc = {} } = JSONData;
+          // 优先使用客户端传入的 RoomId 和 UserId
           const clientRoomId = ctx.request.body.RoomId;
           const clientUserId = ctx.request.body.UserId;
           
-          if (clientRoomId) {
-            VoiceChat.RoomId = clientRoomId;
-          } else if (rtc.RoomId) {
-            VoiceChat.RoomId = rtc.RoomId;
-          }
+          const roomId = clientRoomId || state.RoomId;
+          const targetUserId = clientUserId || state.UserId;
           
-          if (clientUserId) {
-            VoiceChat.AgentConfig.TargetUserId[0] = clientUserId;
-          } else if (rtc.UserId) {
-            VoiceChat.AgentConfig.TargetUserId[0] = rtc.UserId;
-          }
-          body = VoiceChat;
+          assert(roomId, 'RoomId 不能为空');
+          assert(targetUserId, 'UserId 不能为空');
+          
+          // 更新运行时状态
+          RuntimeState[SceneID] = { ...state, RoomId: roomId, UserId: targetUserId };
+          
+          // 构建 VoiceChat 请求体（合并系统导出配置 + 运行时参数）
+          body = {
+            AppId: GlobalRTCConfig.AppId,
+            RoomId: roomId,
+            TaskId: sceneMeta.taskId || `task_${SceneID}_001`,
+            AgentConfig: {
+              ...sceneConfig.AgentConfig,
+              TargetUserId: [targetUserId],
+              UserId: sceneMeta.botUserId || `ai_bot_${SceneID}`,
+              EnableConversationStateCallback: true
+            },
+            Config: sceneConfig.Config
+          };
           console.log('StartVoiceChat 请求体:', JSON.stringify({
-            AppId: VoiceChat.AppId,
-            RoomId: VoiceChat.RoomId,
-            TaskId: VoiceChat.TaskId,
-            TargetUserId: VoiceChat.AgentConfig?.TargetUserId,
+            AppId: body.AppId,
+            RoomId: body.RoomId,
+            TaskId: body.TaskId,
+            TargetUserId: body.AgentConfig?.TargetUserId,
           }, null, 2));
           break;
         case 'StopVoiceChat':
-          const { AppId, RoomId, TaskId } = VoiceChat;
+          const stopRoomId = RuntimeState[SceneID]?.RoomId;
           // 如果 RoomId 为空，说明没有正在运行的任务，直接返回成功
-          if (!RoomId) {
+          if (!stopRoomId) {
             return { Result: 'ok', message: 'No active task to stop' };
           }
-          assert(AppId, 'VoiceChat.AppId 不能为空');
-          assert(TaskId, 'VoiceChat.TaskId 不能为空');
           body = {
-            AppId, RoomId, TaskId
+            AppId: GlobalRTCConfig.AppId,
+            RoomId: stopRoomId,
+            TaskId: sceneMeta.taskId || `task_${SceneID}_001`
           };
           break;
         default:
@@ -122,45 +147,46 @@ app.use(async ctx => {
     ctx,
     apiName: 'getScenes',
     logic: () => {
-      const scenes = Object.keys(Scenes).map((scene) => {
-        const { SceneConfig, RTCConfig = {}, VoiceChat } = Scenes[scene];
-        const { AppId, RoomId, UserId, AppKey, Token } = RTCConfig;
-        assert(AppId, `${scene} 场景的 RTCConfig.AppId 不能为空`);
+      const { AppId, AppKey } = GlobalRTCConfig;
+      assert(AppId, 'credentials.json 中 RTCConfig.AppId 不能为空');
+      assert(AppKey, 'credentials.json 中 RTCConfig.AppKey 不能为空');
+      
+      const scenes = Object.keys(SceneConfigs).map((sceneId) => {
+        const sceneConfig = SceneConfigs[sceneId];
+        const sceneMeta = SceneMeta[sceneId] || {};
         
-        // 只在 RoomId 或 UserId 为空时生成新的（首次调用）
-        // Token 每次都重新生成以确保有效
-        const needGenerateIds = !RoomId || !UserId;
-        if (needGenerateIds) {
-          RTCConfig.RoomId = VoiceChat.RoomId = uuid.v4();
-          RTCConfig.UserId = VoiceChat.AgentConfig.TargetUserId[0] = uuid.v4();
-        }
+        // 生成 RoomId 和 UserId
+        const RoomId = uuid.v4();
+        const UserId = uuid.v4();
         
-        // 每次都重新生成 Token（Token 有过期时间）
-        assert(AppKey, `自动生成 Token 时, ${scene} 场景的 AppKey 不可为空`);
-        const key = new TokenManager.AccessToken(AppId, AppKey, RTCConfig.RoomId, RTCConfig.UserId);
+        // 存储到运行时状态
+        RuntimeState[sceneId] = { RoomId, UserId };
+        
+        // 生成 Token
+        const key = new TokenManager.AccessToken(AppId, AppKey, RoomId, UserId);
         key.addPrivilege(Privileges.PrivSubscribeStream, 0);
         key.addPrivilege(Privileges.PrivPublishStream, 0);
         key.expireTime(Math.floor(new Date() / 1000) + (24 * 3600));
-        RTCConfig.Token = key.serialize();
+        const Token = key.serialize();
         
-        console.log(`场景 ${scene} 配置:`, {
-          RoomId: RTCConfig.RoomId,
-          UserId: RTCConfig.UserId,
-          VoiceChatRoomId: VoiceChat.RoomId,
-          TargetUserId: VoiceChat.AgentConfig.TargetUserId[0],
-        });
+        console.log(`场景 ${sceneId} 配置:`, { RoomId, UserId });
         
-        SceneConfig.id = scene;
-        SceneConfig.botName = VoiceChat?.AgentConfig?.UserId;
-        SceneConfig.isInterruptMode = VoiceChat?.Config?.InterruptMode === 0;
-        SceneConfig.isVision = VoiceChat?.Config?.LLMConfig?.VisionConfig?.Enable;
-        SceneConfig.isScreenMode = VoiceChat?.Config?.LLMConfig?.VisionConfig?.SnapshotConfig?.StreamType === 1;
-        SceneConfig.isAvatarScene = VoiceChat?.Config?.AvatarConfig?.Enabled;
-        SceneConfig.avatarBgUrl = VoiceChat?.Config?.AvatarConfig?.BackgroundUrl;
-        delete RTCConfig.AppKey;
+        // 构建场景信息
+        const sceneInfo = {
+          id: sceneId,
+          name: sceneMeta.name || sceneId,
+          icon: sceneMeta.icon || '',
+          botName: sceneMeta.botUserId || `ai_bot_${sceneId}`,
+          isInterruptMode: sceneConfig.Config?.InterruptMode === 0,
+          isVision: sceneConfig.Config?.LLMConfig?.VisionConfig?.Enable,
+          isScreenMode: sceneConfig.Config?.LLMConfig?.VisionConfig?.SnapshotConfig?.StreamType === 1,
+          isAvatarScene: sceneConfig.Config?.AvatarConfig?.Enabled,
+          avatarBgUrl: sceneConfig.Config?.AvatarConfig?.BackgroundUrl
+        };
+        
         return {
-          scene: SceneConfig || {},
-          rtc: RTCConfig,
+          scene: sceneInfo,
+          rtc: { AppId, RoomId, UserId, Token },
         };
       });
       return {

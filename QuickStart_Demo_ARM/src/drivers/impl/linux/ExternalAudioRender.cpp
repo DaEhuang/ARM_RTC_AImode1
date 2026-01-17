@@ -100,7 +100,7 @@ void ExternalAudioRender::run() {
 
     // 使用 popen 直接写入 aplay
     // 格式: 48000Hz, 立体声, 16-bit signed little-endian
-    FILE* aplayPipe = popen("aplay -D hw:2,0 -f S16_LE -r 48000 -c 2 -t raw -q 2>/dev/null", "w");
+    FILE* aplayPipe = popen("aplay -D hw:1,0 -f S16_LE -r 48000 -c 2 -t raw -q 2>/dev/null", "w");
     
     if (!aplayPipe) {
         qDebug() << "ExternalAudioRender: failed to start aplay";
